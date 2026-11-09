@@ -53,6 +53,7 @@ from zzz_od.config.game_config import (
     GameKeyAction,
     GamepadActionEnum,
     GamepadTypeEnum,
+    NpcInteractionInput,
 )
 from zzz_od.context.zzz_context import ZContext
 
@@ -271,6 +272,14 @@ class SettingGameInterface(VerticalScrollInterface):
     def _get_keyboard_group(self) -> ExpandSettingCardGroup:
         key_group = ExpandSettingCardGroup(icon=FluentIcon.GAME, title='键盘按键')
 
+        self.npc_interaction_input_opt = ComboBoxSettingCard(
+            icon=FluentIcon.GAME,
+            title='NPC 交互输入方式',
+            content='仅用于前台刮刮卡和吼吼饼铺的交互键',
+            options_enum=NpcInteractionInput,
+        )
+        key_group.addSettingCard(self.npc_interaction_input_opt)
+
         self._key_cards: dict[GameKeyAction, KeySettingCard] = {}
         for action in GameKeyAction:
             card = KeySettingCard(icon=FluentIcon.GAME, title=action.value.label)
@@ -317,6 +326,9 @@ class SettingGameInterface(VerticalScrollInterface):
         VerticalScrollInterface.on_interface_shown(self)
 
         self.input_way_opt.init_with_adapter(self.ctx.game_config.type_input_way_adapter)
+        self.npc_interaction_input_opt.init_with_adapter(
+            self.ctx.game_config.get_prop_adapter('npc_interaction_input')
+        )
 
         self.background_mode_switch.init_with_adapter(self.ctx.game_config.get_prop_adapter('background_mode'))
         self.background_gamepad_type_opt.init_with_adapter(self.ctx.game_config.get_prop_adapter('background_gamepad_type'))

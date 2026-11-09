@@ -12,6 +12,11 @@ class GamepadTypeEnum(Enum):
     DS4 = ConfigItem('DS4', 'ds4')
 
 
+class NpcInteractionInput(Enum):
+    STANDARD = ConfigItem('标准方式 (pynput)', 'standard')
+    SCAN_CODE = ConfigItem('Windows 扫描码', 'scan_code')
+
+
 class GamepadActionEnum(Enum):
     """后台模式下用手柄按键替代点击的逻辑动作。
 
@@ -207,6 +212,14 @@ class GameConfig(BasicGameConfig):
     @ds4_key_press_time.setter
     def ds4_key_press_time(self, new_value: float) -> None:
         self.update('ds4_key_press_time', new_value)
+
+    @property
+    def npc_interaction_input(self) -> str:
+        return self.get('npc_interaction_input', NpcInteractionInput.STANDARD.value.value)
+
+    @npc_interaction_input.setter
+    def npc_interaction_input(self, new_value: str) -> None:
+        self.update('npc_interaction_input', new_value)
 
     @property
     def background_mode(self) -> bool:

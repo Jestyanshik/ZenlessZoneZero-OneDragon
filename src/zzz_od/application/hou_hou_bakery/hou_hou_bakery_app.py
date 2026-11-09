@@ -1,11 +1,11 @@
-import time
-
 from one_dragon.base.geometry.point import Point
 from one_dragon.base.operation.operation_edge import node_from
 from one_dragon.base.operation.operation_node import operation_node
 from one_dragon.base.operation.operation_notify import NotifyTiming, node_notify
 from one_dragon.base.operation.operation_round_result import OperationRoundResult
+from one_dragon.utils.log_utils import log
 from zzz_od.application.hou_hou_bakery import hou_hou_bakery_const
+from zzz_od.application.npc_interaction import NPC_INTERACTION_ATTEMPTS, open_npc
 from zzz_od.application.zzz_application import ZApplication
 from zzz_od.context.zzz_context import ZContext
 from zzz_od.operation.back_to_normal_world import BackToNormalWorld
@@ -32,6 +32,12 @@ class HouHouBakeryApp(ZApplication):
             op_name=hou_hou_bakery_const.APP_NAME,
         )
         self.claimed: bool = False  # 本次运行是否已点击领取卡片
+        self._box_attempts: int = 0
+
+    def handle_init(self) -> None:
+        super().handle_init()
+        self.claimed = False
+        self._box_attempts = 0
 
     @operation_node(name='传送', is_start_node=True)
     def transport(self) -> OperationRoundResult:
@@ -40,15 +46,16 @@ class HouHouBakeryApp(ZApplication):
         return self.round_by_op_result(op.execute())
 
     @node_from(from_name='传送')
-    @operation_node(name='移动交互')
+    @operation_node(name='移动交互', node_max_retry_times=NPC_INTERACTION_ATTEMPTS)
     def move_and_interact(self) -> OperationRoundResult:
         """传送之后与吼吼先生交互, 打开领奖界面。传送点已足够近, 无需前移。"""
-        # self.ctx.controller.move_w(press=True, press_time=1, release=True)
+        return open_npc(self, self._npc_screen_marker)
 
-        time.sleep(1) # 防止交互无效 issue #2405 #2395 #2328
-        self.ctx.controller.interact(press=True, press_time=0.2, release=True)
-
-        return self.round_success(wait=3)
+    def _npc_screen_marker(self) -> str | None:
+        for word in ('每日可领取一次', '查看今天', '同类型奖励'):
+            if self.round_by_ocr(self.last_screenshot, word, lcs_percent=1).is_success:
+                return word
+        return None
 
     @node_from(from_name='移动交互')
     @node_notify(when=NotifyTiming.CURRENT_DONE)
@@ -72,6 +79,7 @@ class HouHouBakeryApp(ZApplication):
         #   关闭弹窗后退回集卡机 -> 再点盲盒 -> 又弹窗, 反复循环直至节点重试耗尽而失败。
         result = self.round_by_ocr(self.last_screenshot, '同类型奖励')
         if result.is_success:
+            log.info('Bakery reward screen: marker=同类型奖励')
             status = '领取成功' if self.claimed else '今日已领取'
             return self.round_success(status=status, wait=1)
 
@@ -79,26 +87,43 @@ class HouHouBakeryApp(ZApplication):
         for confirm_word in ['确定', '确认']:
             result = self.round_by_ocr_and_click(self.last_screenshot, confirm_word)
             if result.is_success:
+                log.info('Bakery reward screen: marker=%s', confirm_word)
                 self.claimed = True
-                return self.round_wait(status=confirm_word, wait=1)
+                return self.round_retry(status=confirm_word, wait=1)
 
         # 盲盒已居中 -> 点击屏幕中心开盒
-        result = self.round_by_ocr(self.last_screenshot, '查看今天')
+        result = self.round_by_ocr(self.last_screenshot, '查看今天', lcs_percent=1)
         if result.is_success:
-            center = Point(self.ctx.controller.standard_width // 2,
-                           self.ctx.controller.standard_height // 2)
-            self.ctx.controller.click(center)
-            return self.round_wait(status='点击盲盒', wait=1)
+            return self._open_centered_box()
 
         # 集卡机可领取 -> 点击盲盒格子
         result = self.round_by_ocr(self.last_screenshot, '每日可领取一次')
         if result.is_success:
             click_result = self.round_by_click_area('吼吼饼铺', '盲盒')
             if click_result.is_success:
-                return self.round_wait(status='选择盲盒', wait=1)
+                return self.round_retry(status='选择盲盒', wait=1)
             return self.round_retry(status='盲盒区域点击失败', wait=1)
 
         return self.round_retry(status='未识别目标文本', wait=1)
+
+    def _open_centered_box(self) -> OperationRoundResult:
+        if self._box_attempts >= 3:
+            log.warning('Bakery box still visible after %d attempts', self._box_attempts)
+            return self.round_fail('盲盒界面未继续')
+
+        self._box_attempts += 1
+        if self._box_attempts == 2:
+            log.info('Bakery box: marker=查看今天 attempt=%d method=interaction-key', self._box_attempts)
+            submitted = self.ctx.controller.press_npc_interact()
+            return self.round_wait('等待盲盒打开' if submitted else '交互键发送失败', wait=2)
+
+        center = Point(self.ctx.controller.standard_width // 2, self.ctx.controller.standard_height // 2)
+        clicked = self.ctx.controller.click(center)
+        log.info(
+            'Bakery box: marker=查看今天 attempt=%d method=mouse click_returned=%s',
+            self._box_attempts, clicked,
+        )
+        return self.round_wait('等待盲盒打开', wait=2)
 
     @node_from(from_name='领取奖励')
     @operation_node(name='返回大世界')

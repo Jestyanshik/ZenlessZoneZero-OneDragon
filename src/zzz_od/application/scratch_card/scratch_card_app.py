@@ -4,6 +4,7 @@ from one_dragon.base.operation.operation_edge import node_from
 from one_dragon.base.operation.operation_node import operation_node
 from one_dragon.base.operation.operation_notify import NotifyTiming, node_notify
 from one_dragon.base.operation.operation_round_result import OperationRoundResult
+from zzz_od.application.npc_interaction import NPC_INTERACTION_ATTEMPTS, open_npc
 from zzz_od.application.scratch_card import scratch_card_const
 from zzz_od.application.zzz_application import ZApplication
 from zzz_od.context.zzz_context import ZContext
@@ -44,18 +45,19 @@ class ScratchCardApp(ZApplication):
         return self.round_retry(status=result.status, wait=1)
 
     @node_from(from_name='等待加载')
-    @operation_node(name='移动交互')
+    @operation_node(name='移动交互', node_max_retry_times=NPC_INTERACTION_ATTEMPTS)
     def move_and_interact(self) -> OperationRoundResult:
         """
         传送之后 往前移动一下 方便交互
         :return:
         """
-        self.ctx.controller.move_w(press=True, press_time=1, release=True)
+        return open_npc(self, self._npc_screen_marker, move_forward=True)
 
-        time.sleep(1) # 防止交互无效 issue #2405 #2395 #2328
-        self.ctx.controller.interact(press=True, press_time=0.2, release=True)
-
-        return self.round_success(wait=3)
+    def _npc_screen_marker(self) -> str | None:
+        for area in ('刮刮卡', '每日可刮取一次', '按钮-同类型确认', '嗷呜标题'):
+            if self.round_by_find_area(self.last_screenshot, '报刊亭', area).is_success:
+                return area
+        return None
 
     @node_from(from_name='等待加载', status='刮刮卡')
     @node_from(from_name='移动交互')
@@ -71,29 +73,30 @@ class ScratchCardApp(ZApplication):
 
         result = self.round_by_find_and_click_area(self.last_screenshot, '报刊亭', '刮刮卡')
         if result.is_success:
-            return self.round_wait(status=result.status, wait=1)
+            return self.round_retry(status=result.status, wait=1)
 
         area = self.ctx.screen_loader.get_area('报刊亭', '对话选项')
 
         result = self.round_by_ocr_and_click(self.last_screenshot, '叫醒他', area=area)
         if result.is_success:
-            return self.round_wait(status=result.status, wait=1)
+            return self.round_retry(status=result.status, wait=1)
 
         result = self.round_by_ocr_and_click(self.last_screenshot, '叫醒嗷呜', area=area)
         if result.is_success:
-            return self.round_wait(status=result.status, wait=1)
+            return self.round_retry(status=result.status, wait=1)
 
         result = self.round_by_ocr_and_click(self.last_screenshot, '只是来看刮刮卡和报纸', area=area)
         if result.is_success:
-            return self.round_wait(status=result.status, wait=1)
+            return self.round_retry(status=result.status, wait=1)
 
         result = self.round_by_find_and_click_area(self.last_screenshot, '报刊亭', '嗷呜被你叫醒了')
         if result.is_success:
-            return self.round_wait(status=result.status, wait=1)
+            return self.round_retry(status=result.status, wait=1)
 
-        result = self.round_by_click_area('报刊亭', '嗷呜标题')
-
-        return self.round_retry(status=result.status, wait=1)
+        result = self.round_by_find_and_click_area(self.last_screenshot, '报刊亭', '嗷呜标题')
+        return self.round_retry(
+            status=result.status if result.is_success else '刮刮卡界面未继续', wait=1
+        )
 
     @node_from(from_name='点击刮刮卡')
     @operation_node(name='刮刮')
