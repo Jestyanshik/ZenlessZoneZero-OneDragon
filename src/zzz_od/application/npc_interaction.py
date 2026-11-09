@@ -14,7 +14,8 @@ NPC_INTERACTION_ATTEMPTS = 3
 
 
 def open_npc(
-    op: 'ZApplication', recognize: 'Callable[[], str | None]', *, move_forward: bool = False
+    op: 'ZApplication', recognize: 'Callable[[], str | None]', *,
+    move_forward: bool = False, failure: str = '未进入 NPC 交互画面',
 ) -> 'OperationRoundResult':
     """用最新截图确认交互画面，每轮最多按一次。"""
     if op.last_screenshot is not None:
@@ -25,7 +26,7 @@ def open_npc(
 
     if op.node_retry_times >= NPC_INTERACTION_ATTEMPTS:
         log.warning('NPC screen not confirmed: app=%s', op.app_id)
-        return op.round_fail('未进入 NPC 交互画面')
+        return op.round_fail(failure)
     if op.last_screenshot is None:
         log.warning('NPC screen capture missing: app=%s', op.app_id)
         return op.round_retry('未获得 NPC 画面', wait=1)

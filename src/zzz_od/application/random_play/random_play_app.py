@@ -1,5 +1,4 @@
 import difflib
-import time
 from typing import ClassVar
 
 from cv2.typing import MatLike
@@ -15,6 +14,7 @@ from one_dragon.base.operation.operation_round_result import OperationRoundResul
 from one_dragon.utils import cv2_utils
 from one_dragon.utils.i18_utils import gt
 from one_dragon.utils.log_utils import log
+from zzz_od.application.npc_interaction import NPC_INTERACTION_ATTEMPTS, open_npc
 from zzz_od.application.random_play import random_play_const
 from zzz_od.application.random_play.random_play_config import (
     RANDOM_AGENT_NAME,
@@ -65,11 +65,12 @@ class RandomPlayApp(ZApplication):
         self.turn_compensator: AngleTurnCompensator = AngleTurnCompensator(self.ctx.controller)
         self.retried_transport: bool = False
 
+    @node_from(from_name='确认录像店交互', success=False)
     @node_from(from_name='交互对话', success=False)
     @node_from(from_name='等待经营画面加载', success=False)
     @operation_node(name='传送', is_start_node=True)
     def transport(self) -> OperationRoundResult:
-        if self.previous_node.name in {'交互对话', '等待经营画面加载'}:
+        if self.previous_node.name in {'确认录像店交互', '交互对话', '等待经营画面加载'}:
             if self.retried_transport:
                 return self.round_fail(status='进入经营画面失败，重传送超限')
             self.retried_transport = True
@@ -96,29 +97,58 @@ class RandomPlayApp(ZApplication):
                 return result
             self.ctx.controller.move_w(press=True, press_time=1, release=True)
 
-        time.sleep(1) # 防止交互无效 issue #2405 #2395 #2328
-        self.ctx.controller.interact(press=True, press_time=0.2, release=True)
-
         return self.round_success(wait=1)
 
     @node_from(from_name='移动交互')
+    @operation_node(name='确认录像店交互', node_max_retry_times=NPC_INTERACTION_ATTEMPTS)
+    def open_interaction(self) -> OperationRoundResult:
+        return open_npc(
+            self, self._interaction_marker, failure='未进入录像店对话或经营界面'
+        )
+
+    def _business_marker(self) -> str | None:
+        for area_name in ('经营状况', '昨日账本'):
+            if self.round_by_find_area(self.last_screenshot, '影像店营业', area_name).is_success:
+                return area_name
+        return None
+
+    def _narration_visible(self) -> bool:
+        if self.config.transport_point != RandomPlayTransportPoint.POINT_3.value.value:
+            return False
+        return any(
+            self.round_by_ocr(self.last_screenshot, word, lcs_percent=1).is_success
+            for word in ('层层安检', '偷偷送上来')
+        )
+
+    def _interaction_marker(self) -> str | None:
+        marker = self._business_marker()
+        if marker is not None:
+            return marker
+        if self.config.transport_point != RandomPlayTransportPoint.POINT_1.value.value:
+            area = self.ctx.screen_loader.get_area('影像店营业', '右侧选项区域')
+            if self.round_by_ocr(self.last_screenshot, '查看经营状况', area=area, lcs_percent=1).is_success:
+                return '查看经营状况'
+            if self._narration_visible():
+                return '阿玖旁白'
+        return None
+
+    @node_from(from_name='确认录像店交互')
     @operation_node(name='交互对话', node_max_retry_times=10)
     def handle_interaction_dialog(self) -> OperationRoundResult:
-        # 录像店-柜台交互后没有选项对话，直接交给经营画面加载节点
-        if self.config.transport_point == RandomPlayTransportPoint.POINT_1.value.value:
-            return self.round_success()
+        marker = self._business_marker()
+        if marker is not None:
+            return self.round_success(marker)
+        if self.node_retry_times >= self.node_max_retry_times:
+            return self.round_fail('未进入录像店经营界面')
 
-        # 录像店营业点交互后的选项对话框，优先选择“查看经营状况”
         area = self.ctx.screen_loader.get_area('影像店营业', '右侧选项区域')
         result = self.round_by_ocr_and_click(self.last_screenshot, '查看经营状况', area=area)
         if result.is_success:
-            return self.round_success(status=result.status, wait=1)
+            return self.round_retry('等待录像店经营界面', wait=1)
 
-        # (布亚斯特城区-录像店营业点)需要推进一次对话框，右侧选项区域才会出现“查看经营状况”
-        result = self.round_by_click_area('影像店营业', '对话框标题')
-        if result.is_success:
-            return self.round_retry(status='继续对话', wait=1)
-        return result
+        if self._narration_visible():
+            self.round_by_click_area('影像店营业', '对话框标题')
+        return self.round_retry('等待录像店对话', wait=1)
 
     @node_from(from_name='交互对话')
     @operation_node(name='等待经营画面加载', node_max_retry_times=10)
@@ -133,7 +163,9 @@ class RandomPlayApp(ZApplication):
         if result.is_success:
             return self.round_success(wait=1)
 
-        return self.round_retry(status='等待经营画面', wait=1)
+        if self.node_retry_times >= self.node_max_retry_times:
+            return self.round_fail('未进入录像店经营界面')
+        return self.round_retry(status='等待录像店经营界面', wait=1)
 
     @node_from(from_name='等待经营画面加载')
     @operation_node(name='识别营业状态')
