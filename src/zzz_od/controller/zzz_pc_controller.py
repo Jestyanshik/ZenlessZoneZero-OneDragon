@@ -4,11 +4,10 @@ import time
 from cv2.typing import MatLike
 
 from one_dragon.base.controller.pc_button.pc_button_utils import is_mouse_button
-from one_dragon.base.controller.pc_button.scan_code_keyboard import press_scan_code
 from one_dragon.base.controller.pc_controller_base import PcControllerBase
 from one_dragon.utils import cv2_utils
 from one_dragon.utils.log_utils import log
-from zzz_od.config.game_config import GameConfig, NpcInteractionInput
+from zzz_od.config.game_config import GameConfig, KeyboardInputMode
 from zzz_od.const import game_const
 from zzz_od.screen_area.screen_normal_world import ScreenNormalWorldEnum
 
@@ -69,6 +68,9 @@ class ZPcController(PcControllerBase):
 
     def enable_keyboard(self):
         PcControllerBase.enable_keyboard(self)
+        self.keyboard_controller.set_scan_codes(
+            self.game_config.keyboard_input_mode == KeyboardInputMode.SCAN_CODE.value.value
+        )
         self.action_keys = self.game_config.get_action_keys('keyboard')
 
     def enable_background_mode(self, gamepad_type: str = 'xbox') -> None:
@@ -161,8 +163,8 @@ class ZPcController(PcControllerBase):
         key = self.action_keys['interact']
         duration = 0.2
         use_scan_code = (
-            self.game_config.npc_interaction_input == NpcInteractionInput.SCAN_CODE.value.value
-            and self.btn_controller is self.keyboard_controller
+            self.btn_controller is self.keyboard_controller
+            and self.keyboard_controller.use_scan_codes
             and not self.background_mode
             and not is_mouse_button(key)
         )
@@ -172,12 +174,9 @@ class ZPcController(PcControllerBase):
             return False
 
         try:
-            if use_scan_code:
-                scan = press_scan_code(key, duration)
-                log.info('NPC input: key=%r method=%s scan=%#x accepted=2/2', key, method, scan)
-            else:
-                self.interact(press=True, press_time=duration, release=True)
-                log.info('NPC input: key=%r method=%s returned; OS result unavailable', key, method)
+            self.interact(press=True, press_time=duration, release=True)
+            result = 'accepted by Windows' if use_scan_code else 'returned; OS result unavailable'
+            log.info('NPC input: key=%r method=%s %s', key, method, result)
         except (OSError, ValueError) as error:
             log.warning('NPC input failed: key=%r method=%s error=%s', key, method, error)
             return False

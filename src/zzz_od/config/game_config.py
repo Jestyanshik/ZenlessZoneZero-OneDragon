@@ -12,7 +12,7 @@ class GamepadTypeEnum(Enum):
     DS4 = ConfigItem('DS4', 'ds4')
 
 
-class NpcInteractionInput(Enum):
+class KeyboardInputMode(Enum):
     STANDARD = ConfigItem('标准方式 (pynput)', 'standard')
     SCAN_CODE = ConfigItem('Windows 扫描码', 'scan_code')
 
@@ -214,12 +214,13 @@ class GameConfig(BasicGameConfig):
         self.update('ds4_key_press_time', new_value)
 
     @property
-    def npc_interaction_input(self) -> str:
-        return self.get('npc_interaction_input', NpcInteractionInput.STANDARD.value.value)
+    def keyboard_input_mode(self) -> str:
+        previous = self.get('npc_interaction_input', KeyboardInputMode.STANDARD.value.value)
+        return self.get('keyboard_input_mode', previous)
 
-    @npc_interaction_input.setter
-    def npc_interaction_input(self, new_value: str) -> None:
-        self.update('npc_interaction_input', new_value)
+    @keyboard_input_mode.setter
+    def keyboard_input_mode(self, new_value: str) -> None:
+        self.update('keyboard_input_mode', new_value)
 
     @property
     def background_mode(self) -> bool:

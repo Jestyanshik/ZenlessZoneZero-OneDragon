@@ -37,6 +37,12 @@ class ControllerBase:
         """
         return False
 
+    def pause_game_key_input(self) -> None:
+        """暂停时释放受控制器跟踪的游戏按键。"""
+
+    def resume_game_key_input(self) -> None:
+        """恢复游戏按键发送。"""
+
     def cleanup_after_app_shutdown(self) -> None:
         """
         清理资源

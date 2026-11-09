@@ -82,6 +82,7 @@ class PcControllerBase(ControllerBase):
             return False
 
     def init_before_context_run(self) -> bool:
+        self.resume_game_key_input()
         pyautogui.PAUSE = 0.001  # pyautogui的操作会有延迟, 一些需要低延迟的操作中会取消这个延迟然后恢复延迟, 以免影响其他功能
         pyautogui.FAILSAFE = False  # 禁用 Fail-Safe,防止鼠标接近屏幕的边缘或角落时报错
         self.init_game_win()
@@ -93,8 +94,18 @@ class PcControllerBase(ControllerBase):
         """
         清理资源
         """
+        self.pause_game_key_input()
         self.btn_controller.reset()
         self.screenshot_controller.cleanup()
+
+    def pause_game_key_input(self) -> None:
+        try:
+            self.keyboard_controller.scan_keyboard.suspend()
+        except OSError:
+            log.warning('Failed to release one or more game keys', exc_info=True)
+
+    def resume_game_key_input(self) -> None:
+        self.keyboard_controller.scan_keyboard.resume()
 
     def active_window(self) -> None:
         """
@@ -114,6 +125,7 @@ class PcControllerBase(ControllerBase):
 
     def enable_xbox(self):
         if pc_button_utils.is_vgamepad_installed():
+            self.keyboard_controller.scan_keyboard.reset()
             if self.xbox_controller is None:
                 self.xbox_controller = XboxButtonController()
             self.btn_controller = self.xbox_controller
@@ -121,6 +133,7 @@ class PcControllerBase(ControllerBase):
 
     def enable_ds4(self):
         if pc_button_utils.is_vgamepad_installed():
+            self.keyboard_controller.scan_keyboard.reset()
             if self.ds4_controller is None:
                 self.ds4_controller = Ds4ButtonController()
             self.btn_controller = self.ds4_controller

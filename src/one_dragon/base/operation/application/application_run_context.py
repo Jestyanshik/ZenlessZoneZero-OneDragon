@@ -379,6 +379,8 @@ class ApplicationRunContext:
         self.last_run_result = result
         if self.is_context_running:
             self.switch_context_pause_and_run()
+        elif self.ctx.controller is not None:
+            self.ctx.controller.pause_game_key_input()
 
         self._run_state = ApplicationRunContextStateEnum.STOP
         if dispatch_event:
@@ -434,11 +436,15 @@ class ApplicationRunContext:
         if self._run_state == ApplicationRunContextStateEnum.RUNNING:
             log.info("暂停运行")
             self._run_state = ApplicationRunContextStateEnum.PAUSE
+            if self.ctx.controller is not None:
+                self.ctx.controller.pause_game_key_input()
             self.event_bus.dispatch_event(
                 ApplicationRunContextStateEventEnum.PAUSE, self._run_state
             )
         elif self._run_state == ApplicationRunContextStateEnum.PAUSE:
             log.info("恢复运行")
+            if self.ctx.controller is not None:
+                self.ctx.controller.resume_game_key_input()
             self._run_state = ApplicationRunContextStateEnum.RUNNING
             self.event_bus.dispatch_event(
                 ApplicationRunContextStateEventEnum.RESUME, self._run_state
