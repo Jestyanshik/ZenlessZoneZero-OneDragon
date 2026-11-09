@@ -177,7 +177,7 @@ class DevtoolsTemplateHelperInterface(VerticalScrollInterface, HistoryMixin):
         self.template_shape_opt.currentIndexChanged.connect(self._on_template_shape_changed)
 
         self.shape_help_btn = ToolButton(FluentIcon.HELP)
-        self.shape_help_btn.setToolTip('点击查看形状使用说明')
+        self.shape_help_btn.setToolTip(gt('点击查看形状使用说明'))
         self.shape_help_btn.clicked.connect(self._show_template_shape_help)
 
         self.template_shape_help_opt = MultiPushSettingCard(
@@ -882,7 +882,7 @@ class DevtoolsTemplateHelperInterface(VerticalScrollInterface, HistoryMixin):
         右键点击图片时，弹窗显示点击位置的 HSV 颜色
         """
         if self.chosen_template is None or self.chosen_template.screen_image is None:
-            QMessageBox.warning(self, "错误", "未选择图片")
+            QMessageBox.warning(self, gt("错误"), gt("未选择图片"))
             return
 
         # 获取 RGB 颜色值
@@ -895,7 +895,7 @@ class DevtoolsTemplateHelperInterface(VerticalScrollInterface, HistoryMixin):
                    f"RGB: ({rgb_color[0]}, {rgb_color[1]}, {rgb_color[2]})\n"
                    f"HSV: ({hsv_color[0]}, {hsv_color[1]}, {hsv_color[2]})")
 
-        QMessageBox.information(self, "像素颜色信息", message)
+        QMessageBox.information(self, gt("像素颜色信息"), message)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """

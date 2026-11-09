@@ -8,6 +8,7 @@ from one_dragon.base.operation.one_dragon_env_context import OneDragonEnvContext
 from one_dragon.utils import os_utils, yaml_utils
 from one_dragon.utils.log_utils import log
 from one_dragon_qt.widgets.fast_scroll_area import FastScrollArea
+from one_dragon.utils.i18_utils import gt
 
 
 class ScrollCreditsWidget(QWidget):
@@ -91,7 +92,7 @@ class ScrollCreditsWidget(QWidget):
         self.content_layout.addWidget(self.title_label)
 
         # 子标题
-        self.subtitle_label = QLabel("特别鸣谢")
+        self.subtitle_label = QLabel(gt("特别鸣谢"))
         self.subtitle_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.subtitle_label.setStyleSheet(f"""
             QLabel {{
@@ -113,7 +114,7 @@ class ScrollCreditsWidget(QWidget):
         self.content_layout.addWidget(self.credits_container)
 
         # 结尾标语
-        self.end_label = QLabel("感谢您的支持与陪伴")
+        self.end_label = QLabel(gt("感谢您的支持与陪伴"))
         self.end_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.end_label.setStyleSheet(f"""
             QLabel {{
@@ -150,7 +151,7 @@ class ScrollCreditsWidget(QWidget):
 
             if not os.path.exists(contributors_file):
                 # 如果文件不存在，显示提示
-                no_file_label = QLabel("contributors.yaml文件不存在")
+                no_file_label = QLabel(gt("contributors.yaml文件不存在"))
                 no_file_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 no_file_label.setStyleSheet("""
                     QLabel {
@@ -252,7 +253,7 @@ class ScrollCreditsWidget(QWidget):
 
             # 如果没有贡献者信息，显示提示
             if not all_contributors:
-                no_data_label = QLabel("未获取到贡献者信息")
+                no_data_label = QLabel(gt("未获取到贡献者信息"))
                 no_data_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 no_data_label.setStyleSheet("""
                     QLabel {
@@ -266,7 +267,7 @@ class ScrollCreditsWidget(QWidget):
         except Exception as e:
             log.error(f"加载贡献者数据失败: {e}")
             # 添加错误信息
-            error_label = QLabel(f"加载贡献者信息失败: {str(e)}")
+            error_label = QLabel(gt('加载贡献者信息失败: {0}').format(str(e)))
             error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             error_label.setStyleSheet("""
                 QLabel {
@@ -302,7 +303,7 @@ class ScrollCreditsWidget(QWidget):
             border_color = "#444444" if isDarkTheme() else "#bbbbbb"
 
             # 类别标题样式
-            title_text = contributor.get('name', '')
+            title_text = gt(contributor.get('name', ''))
             name_label = QLabel(f"【{title_text}】")
             name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             name_label.setStyleSheet(f"""
@@ -326,6 +327,8 @@ class ScrollCreditsWidget(QWidget):
 
         # 名称/标题
         title_text = contributor.get('name', '')
+        if 'members' in contributor:
+            title_text = gt(title_text)
         name_label = QLabel(f"{title_text}")
         name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -364,7 +367,7 @@ class ScrollCreditsWidget(QWidget):
 
         # 贡献者角色（可选）
         if 'role' in contributor:
-            role_label = QLabel(f"{contributor['role']}")
+            role_label = QLabel(gt(str(contributor['role'])))
             role_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             role_label.setStyleSheet(f"""
                 QLabel {{
@@ -379,7 +382,7 @@ class ScrollCreditsWidget(QWidget):
 
         # 贡献次数（如果存在）
         if 'contributions' in contributor:
-            contributions_label = QLabel(f"{contributor.get('contributions')}")
+            contributions_label = QLabel(gt(str(contributor.get('contributions'))))
             contributions_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
             contributions_label.setStyleSheet(f"""

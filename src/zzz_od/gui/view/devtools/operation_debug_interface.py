@@ -23,6 +23,7 @@ from zzz_od.application.devtools.operation_debug.operation_debug_config import (
     OperationDebugConfig,
 )
 from zzz_od.context.zzz_context import ZContext
+from one_dragon.utils.i18_utils import gt
 
 
 class OperationDebugInterface(AppRunInterface):
@@ -136,8 +137,8 @@ class OperationDebugInterface(AppRunInterface):
             else:
                 self.ctx.battle_assistant_config.background_mode = False
             InfoBar.warning(
-                title='后台模式不可用',
-                content='未检测到 vgamepad / ViGEmBus，请先安装虚拟手柄驱动',
+                title=gt('后台模式不可用'),
+                content=gt('未检测到 vgamepad / ViGEmBus，请先安装虚拟手柄驱动'),
                 parent=self,
                 duration=5000,
             )

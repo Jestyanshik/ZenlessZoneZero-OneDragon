@@ -26,6 +26,7 @@ from zzz_od.application.world_patrol.world_patrol_route import WorldPatrolRoute
 from zzz_od.application.world_patrol.world_patrol_service import WorldPatrolService
 from zzz_od.context.zzz_context import ZContext
 from zzz_od.gui.view.world_patrol.route_operation_editor_dialog import RouteOperationEditorDialog
+from one_dragon.utils.i18_utils import gt
 
 
 class DebugRouteRunner(QThread):
@@ -125,15 +126,15 @@ class WorldPatrolRouteRecorderInterface(VerticalScrollInterface):
         )
         control_layout.addWidget(self.route_row)
 
-        self.new_route_btn = PushButton(text='新增')
+        self.new_route_btn = PushButton(text=gt('新增'))
         self.new_route_btn.clicked.connect(self.on_new_route_btn_clicked)
-        self.save_route_btn = PushButton(text='保存')
+        self.save_route_btn = PushButton(text=gt('保存'))
         self.save_route_btn.clicked.connect(self.on_save_route_btn_clicked)
-        self.delete_route_btn = PushButton(text='删除')
+        self.delete_route_btn = PushButton(text=gt('删除'))
         self.delete_route_btn.clicked.connect(self.on_delete_route_btn_clicked)
-        self.cancel_route_btn = PushButton(text='取消')
+        self.cancel_route_btn = PushButton(text=gt('取消'))
         self.cancel_route_btn.clicked.connect(self.on_cancel_route_btn_clicked)
-        self.edit_operations_btn = PushButton(text='编辑操作')
+        self.edit_operations_btn = PushButton(text=gt('编辑操作'))
         self.edit_operations_btn.clicked.connect(self.on_edit_operations_btn_clicked)
         self.rout_opt_row = MultiPushSettingCard(
             icon=FluentIcon.SAVE, title='编辑',
@@ -157,11 +158,11 @@ class WorldPatrolRouteRecorderInterface(VerticalScrollInterface):
         )
         control_layout.addWidget(self.tp_opt)
 
-        self.screenshot_btn = PushButton(text='截图(1)')
+        self.screenshot_btn = PushButton(text=gt('截图(1)'))
         self.screenshot_btn.clicked.connect(self.on_screenshot_btn_clicked)
-        self.add_move_btn = PushButton(text='添加移动(4)')
+        self.add_move_btn = PushButton(text=gt('添加移动(4)'))
         self.add_move_btn.clicked.connect(self.on_add_move_btn_clicked)
-        self.undo_move_btn = PushButton(text='回退(5)')
+        self.undo_move_btn = PushButton(text=gt('回退(5)'))
         self.undo_move_btn.clicked.connect(self.on_undo_move_btn_clicked)
         self.pos_opt_row = MultiPushSettingCard(
             icon=FluentIcon.ROBOT, title='操作',
@@ -177,7 +178,7 @@ class WorldPatrolRouteRecorderInterface(VerticalScrollInterface):
         self.debug_start_input.setMinimum(0)
         self.debug_start_input.setValue(0)
         self.debug_start_input.setMinimumWidth(80)
-        self.debug_route_btn = PushButton(text='调试')
+        self.debug_route_btn = PushButton(text=gt('调试'))
         self.debug_route_btn.clicked.connect(self.on_debug_route_btn_clicked)
         self.debug_row = MultiPushSettingCard(
             icon=FluentIcon.ROBOT, title='调试',

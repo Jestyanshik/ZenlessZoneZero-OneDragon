@@ -222,7 +222,7 @@ class ResourceUpdateCoordinator(QObject):
                 self.ctx,
                 self.queue,
                 confirm_specs,
-                title='发现可下载资源',
+                title=gt('发现可下载资源'),
                 show_remember=(
                     included_ocr_request is not None
                     and any(spec.resource_type == 'ocr' for spec in confirm_specs)

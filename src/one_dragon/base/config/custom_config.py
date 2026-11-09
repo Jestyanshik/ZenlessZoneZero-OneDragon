@@ -8,6 +8,7 @@ class UILanguageEnum(Enum):
 
     AUTO = ConfigItem('跟随系统', 'auto')
     ZH = ConfigItem('简体中文', 'zh')
+    RU = ConfigItem('Русский', 'ru')
     EN = ConfigItem('English', 'en')
 
 class ThemeEnum(Enum):

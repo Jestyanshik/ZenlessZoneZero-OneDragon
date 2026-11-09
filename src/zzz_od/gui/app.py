@@ -1,10 +1,13 @@
-try:
-    import sys
+import sys
 
-    from PySide6.QtCore import Qt, QThread, QTimer, Signal
+from one_dragon.utils.i18_utils import get_ui_language, gt, update_default_lang
+
+try:
+    from PySide6.QtCore import QLibraryInfo, QLocale, Qt, QThread, QTimer, QTranslator, Signal
     from PySide6.QtGui import QCloseEvent
     from PySide6.QtWidgets import QApplication
     from qfluentwidgets import (
+        FluentTranslator,
         NavigationItemPosition,
         Theme,
         setTheme,
@@ -12,7 +15,6 @@ try:
 
     from one_dragon.base.operation.one_dragon_context import ContextInstanceEventEnum
     from one_dragon.utils import app_utils, os_utils
-    from one_dragon.utils.i18_utils import gt
     from one_dragon_qt.overlay.overlay_manager import OverlayManager
     from one_dragon_qt.services.styles_manager import OdQtStyleSheet
     from one_dragon_qt.view.context_event_signal import ContextEventSignal
@@ -252,7 +254,7 @@ try:
             """
             self.titleBar.setLauncherVersion(versions[0])
             self.titleBar.setCodeVersion(versions[1])
-            self.titleBar.setLaunchTag(versions[2])
+            self.titleBar.setLaunchTag(gt(versions[2]))
 
         def _check_first_run(self):
             """首次运行时显示防倒卖弹窗"""
@@ -287,18 +289,20 @@ except Exception:
     import traceback
     import webbrowser
 
-    stack_trace = traceback.format_exc()
-    _init_error = f"启动一条龙失败，报错信息如下:\n{stack_trace}"
+    _init_error = traceback.format_exc()
 
 
 # 初始化应用程序，并启动主窗口
 def main() -> None:
     if _init_error is not None:
         # 显示错误弹窗，询问用户是否打开排障文档
-        error_message = f"启动一条龙失败,报错信息如下:\n{stack_trace}\n\n是否打开排障文档查看解决方案?"
+        update_default_lang('auto')
+        error_message = gt(
+            '启动一条龙失败,报错信息如下:\n{trace}\n\n是否打开排障文档查看解决方案?'
+        ).format(trace=_init_error)
         # MB_ICONERROR | MB_OKCANCEL = 0x10 | 0x01 = 0x11
         # 返回值: IDOK = 1, IDCANCEL = 2
-        result = ctypes.windll.user32.MessageBoxW(0, error_message, "错误", 0x11)
+        result = ctypes.windll.user32.MessageBoxW(0, error_message, gt('错误'), 0x11)
 
         # 如果用户点击确定，则打开排障文档
         if result == 1:  # IDOK
@@ -313,6 +317,15 @@ def main() -> None:
     app.setAttribute(Qt.ApplicationAttribute.AA_DontCreateNativeWidgetSiblings)
 
     _ctx = ZContext()
+    update_default_lang(_ctx.custom_config.ui_language)
+    if get_ui_language() == 'ru':
+        qt_translator = QTranslator(app)
+        if qt_translator.load(
+            'qtbase_ru', QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+        ):
+            app.installTranslator(qt_translator)
+        fluent_translator = FluentTranslator(QLocale('ru_RU'), app)
+        app.installTranslator(fluent_translator)
 
     # 设置主题
     setTheme(Theme[_ctx.custom_config.theme.upper()])

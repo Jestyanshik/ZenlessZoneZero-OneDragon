@@ -26,6 +26,7 @@ from zzz_od.application.suibian_temple.suibian_temple_config import (
     SuibianTempleConfig,
 )
 from zzz_od.context.zzz_context import ZContext
+from one_dragon.utils.i18_utils import gt
 
 
 class SuibianTempleSettingInterface(VerticalScrollInterface, GroupIdMixin):
@@ -124,11 +125,11 @@ class SuibianTempleSettingInterface(VerticalScrollInterface, GroupIdMixin):
             icon=FluentIcon.VIDEO,
             title="邦巢-最低购买价格",
             btn_list=[
-                QLabel('游历'),
+                QLabel(gt('游历')),
                 self.boo_box_adventure_price,
-                QLabel('制造'),
+                QLabel(gt('制造')),
                 self.boo_box_craft_price,
-                QLabel('售卖'),
+                QLabel(gt('售卖')),
                 self.boo_box_sell_price,
             ]
         )

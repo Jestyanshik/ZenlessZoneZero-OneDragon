@@ -57,7 +57,7 @@ class ComboBoxSettingCard(SettingCardBase, AdapterInitMixin):
         self.hBoxLayout.addSpacing(16)
 
         # 处理工具提示
-        self.tooltip_text: str = tooltip
+        self.tooltip_text: str = gt(tooltip)
         self._tooltip: ToolTip | None = None
         if self.with_tooltip:
             self.titleLabel.installEventFilter(self)

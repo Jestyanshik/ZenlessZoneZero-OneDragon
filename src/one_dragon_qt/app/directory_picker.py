@@ -1,4 +1,3 @@
-import locale
 import os
 
 from PySide6.QtCore import QEventLoop, QSize, Qt, QTimer
@@ -27,6 +26,7 @@ from qfluentwidgets import (
     ToolButton,
 )
 
+from one_dragon.utils.i18_utils import detect_language, gt
 from one_dragon_qt.services.styles_manager import OdQtStyleSheet
 from one_dragon_qt.services.unpack_runner import UnpackResourceRunner
 from one_dragon_qt.utils.image_utils import scale_pixmap_for_high_dpi
@@ -82,22 +82,11 @@ class DirectoryPickerTranslator:
     def get_text(self, key, **kwargs):
         """获取翻译文本"""
         text = self.translations.get(self.language, self.translations['zh']).get(key, key)
+        if self.language == 'ru':
+            text = gt(text, lang='ru')
         if kwargs:
             text = text.format(**kwargs)
         return text
-
-    @staticmethod
-    def detect_language():
-        """自动检测系统语言"""
-        try:
-            system_locale = locale.getdefaultlocale()[0]
-            if system_locale and system_locale.startswith('zh'):
-                return 'zh'
-            else:
-                return 'en'
-        except Exception:
-            return 'zh'
-
 
 class DirectoryPickerInterface(QWidget):
     """路径选择器界面"""
@@ -109,7 +98,7 @@ class DirectoryPickerInterface(QWidget):
         self.icon_path = icon_path
         self.installer_dir = installer_dir
 
-        self.translator = DirectoryPickerTranslator(DirectoryPickerTranslator.detect_language())
+        self.translator = DirectoryPickerTranslator(detect_language())
         self._runner: UnpackResourceRunner | None = None
         self._last_log: str = ""
         self._pending_log: str = ""
@@ -363,7 +352,8 @@ class DirectoryPickerInterface(QWidget):
     def _on_language_switch(self):
         """语言切换按钮点击事件"""
         current_lang = self.translator.language
-        new_lang = 'en' if current_lang == 'zh' else 'zh'
+        languages = {'zh': 'en', 'en': 'ru', 'ru': 'zh'}
+        new_lang = languages.get(current_lang, 'zh')
         self.translator = DirectoryPickerTranslator(new_lang)
         self._update_ui_texts()
 

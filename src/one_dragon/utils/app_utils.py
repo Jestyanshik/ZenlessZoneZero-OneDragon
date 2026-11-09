@@ -16,11 +16,14 @@ def start_one_dragon(restart: bool) -> None:
         launcher_path = Path(sys.executable)
     else:
         launcher_path = Path(os_utils.get_work_dir()) / 'OneDragon-Launcher.exe'
+    command = [str(launcher_path)]
+    if restart and not getattr(sys, 'frozen', False) and not launcher_path.is_file():
+        command = [sys.executable, *sys.orig_argv[1:]]
     env = os.environ.copy()
     # 重启进程必须重新初始化 PyInstaller，不能复用即将退出的父进程环境。
     env['PYINSTALLER_RESET_ENVIRONMENT'] = '1'
     subprocess.Popen(
-        [str(launcher_path)],
+        command,
         cwd=os_utils.get_work_dir(),
         env=env,
         creationflags=subprocess.CREATE_NEW_CONSOLE,

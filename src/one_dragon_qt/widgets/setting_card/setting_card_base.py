@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
 from qfluentwidgets import FluentIconBase, FluentStyleSheet, SettingCard
 from qfluentwidgets.components.settings.setting_card import SettingIconWidget
 
-from one_dragon.utils.i18_utils import gt
+from one_dragon.utils.i18_utils import get_ui_language, gt
 from one_dragon_qt.utils.layout_utils import IconSize, Margins
 
 
@@ -21,7 +21,8 @@ class SettingCardBase(SettingCard):
         self.vBoxLayout = QVBoxLayout()
 
         # 设置固定高度
-        self.setFixedHeight(50)
+        wrap_labels = get_ui_language() == 'ru'
+        self.setFixedHeight(68 if wrap_labels and content else 50)
 
         # 设置水平布局属性
         self.hBoxLayout.setSpacing(0)
@@ -36,6 +37,11 @@ class SettingCardBase(SettingCard):
         # 设置初始参数
         self.titleLabel = QLabel(gt(title), self)
         self.contentLabel = QLabel(gt(content), self)
+        if wrap_labels:
+            self.titleLabel.setWordWrap(True)
+            self.contentLabel.setWordWrap(True)
+            self.titleLabel.setToolTip(self.titleLabel.text())
+            self.contentLabel.setToolTip(self.contentLabel.text())
 
         # 设置最大宽度限制，防止文字过长撑大窗口
         self.contentLabel.setMaximumWidth(500)
@@ -51,11 +57,13 @@ class SettingCardBase(SettingCard):
 
         # 添加组件到布局
         self.hBoxLayout.addSpacing(margins.top)
-        self.hBoxLayout.addLayout(self.vBoxLayout)
-        self.vBoxLayout.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignLeft)
-        self.vBoxLayout.addWidget(self.contentLabel, 0, Qt.AlignmentFlag.AlignLeft)
+        self.hBoxLayout.addLayout(self.vBoxLayout, 1 if wrap_labels else 0)
+        label_alignment = Qt.AlignmentFlag(0) if wrap_labels else Qt.AlignmentFlag.AlignLeft
+        self.vBoxLayout.addWidget(self.titleLabel, 0, label_alignment)
+        self.vBoxLayout.addWidget(self.contentLabel, 0, label_alignment)
         self.hBoxLayout.addSpacing(margins.bottom)
-        self.hBoxLayout.addStretch(1)
+        if not wrap_labels:
+            self.hBoxLayout.addStretch(1)
 
         # 设置样式
         self.contentLabel.setObjectName("contentLabel")
@@ -63,7 +71,14 @@ class SettingCardBase(SettingCard):
 
     def setContent(self, content: str):
         """设置卡片内容"""
+        if self.contentLabel.wordWrap():
+            text = gt(content)
+            self.contentLabel.setText(text)
+            self.contentLabel.setToolTip(text)
+            self.contentLabel.setVisible(bool(content))
+            return
         if content is not None:
+            content = gt(content)
             # 使用fontMetrics来计算文字是否超出最大宽度，如果超出则添加省略号
             font_metrics = self.contentLabel.fontMetrics()
             max_width = self.contentLabel.maximumWidth()

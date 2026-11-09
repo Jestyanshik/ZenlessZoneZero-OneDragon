@@ -11,6 +11,7 @@ from one_dragon_qt.widgets.setting_card.combo_box_setting_card import (
 from one_dragon_qt.widgets.setting_card.setting_card_base import SettingCardBase
 from one_dragon_qt.widgets.setting_card.spin_box_setting_card import SpinBoxSettingCard
 from zzz_od.application.life_on_line import life_on_line_const
+from one_dragon.utils.i18_utils import gt
 
 
 class LifeOnLineSettingFlyout(AppSettingFlyout):
@@ -51,7 +52,7 @@ class LifeOnLineSettingFlyout(AppSettingFlyout):
         )
 
         self.times_opt.init_with_adapter(get_prop_adapter(config, 'daily_plan_times'))
-        self.done_value.titleLabel.setText(f'当日: {run_record.daily_run_times}')
+        self.done_value.titleLabel.setText(gt('当日: {0}').format(run_record.daily_run_times))
 
         team_list = ([ConfigItem('游戏内配队', -1)] +
                      [ConfigItem(team.name, team.idx) for team in self.ctx.team_config.team_list])

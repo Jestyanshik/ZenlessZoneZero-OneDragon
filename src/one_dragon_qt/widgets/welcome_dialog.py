@@ -1,6 +1,6 @@
 from PySide6.QtCore import QTimer
 from qfluentwidgets import MessageBoxBase, DisplayLabel, LargeTitleLabel, SubtitleLabel
-from one_dragon.utils.i18_utils import gt, get_default_lang
+from one_dragon.utils.i18_utils import get_ui_language, gt
 
 class WelcomeDialog(MessageBoxBase):
     """首次运行时显示的欢迎对话框"""
@@ -15,12 +15,13 @@ class WelcomeDialog(MessageBoxBase):
         self.titleLabel = SubtitleLabel(gt(title))
         self.viewLayout.addWidget(self.titleLabel)
 
-        if get_default_lang() == 'zh':
+        if get_ui_language() == 'zh':
             content_label = DisplayLabel(self)
-            content_label.setText("本软件完全<font color='red'>开源 免费</font><br>\n不要在<font color='red'>第三方渠道</font>购买<br>\n谨防<font color='red'>诈骗 盗号</font>")
+            content_label.setText(gt("本软件完全<font color='red'>开源 免费</font><br>\n不要在<font color='red'>第三方渠道</font>购买<br>\n谨防<font color='red'>诈骗 盗号</font>"))
         else:
             content_label = LargeTitleLabel(self)
-            content_label.setText("This software is completely <font color='red'>Open Source and Free</font><br>\nDo not purchase from <font color='red'>Third-party Channels</font><br>\nBeware of <font color='red'>Scams and Account Theft</font>")
+            content_label.setText(gt("This software is completely <font color='red'>Open Source and Free</font><br>\nDo not purchase from <font color='red'>Third-party Channels</font><br>\nBeware of <font color='red'>Scams and Account Theft</font>"))
+        content_label.setWordWrap(True)
         self.viewLayout.addWidget(content_label)
 
         self._setup_buttons()

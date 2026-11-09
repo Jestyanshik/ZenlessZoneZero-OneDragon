@@ -14,6 +14,7 @@ from one_dragon.utils.log_utils import log
 from one_dragon_qt.widgets.setting_card.multi_push_setting_card import (
     MultiPushSettingCard,
 )
+from one_dragon.utils.i18_utils import gt
 
 
 class QQBotBindRunner(QThread):
@@ -111,11 +112,11 @@ class QQBotBindCard(MultiPushSettingCard):
         self._runner: QQBotBindRunner | None = None
         self._verify_bar: InfoBar | None = None
 
-        self.bind_user_btn = PushButton(text='绑定单聊', icon=FluentIcon.PEOPLE)
+        self.bind_user_btn = PushButton(text=gt('绑定单聊'), icon=FluentIcon.PEOPLE)
         self.bind_user_btn.clicked.connect(lambda: self._start_bind(False))
-        self.bind_group_btn = PushButton(text='绑定群聊', icon=FluentIcon.PEOPLE)
+        self.bind_group_btn = PushButton(text=gt('绑定群聊'), icon=FluentIcon.PEOPLE)
         self.bind_group_btn.clicked.connect(lambda: self._start_bind(True))
-        self.cancel_btn = PushButton(text='取消', icon=FluentIcon.CANCEL)
+        self.cancel_btn = PushButton(text=gt('取消'), icon=FluentIcon.CANCEL)
         self.cancel_btn.clicked.connect(self._cancel_bind)
         self.cancel_btn.setVisible(False)
 
@@ -152,7 +153,7 @@ class QQBotBindCard(MultiPushSettingCard):
         self._runner.result_signal.connect(self._on_bind_result)
         self._runner.finished.connect(self._on_bind_finished)
         self._set_binding(True)
-        self.setContent('正在连接 QQ 网关…')
+        self.setContent(gt('正在连接 QQ 网关…'))
         self._runner.start()
 
     def _cancel_bind(self) -> None:
@@ -191,7 +192,7 @@ class QQBotBindCard(MultiPushSettingCard):
             return
 
         target = '群聊' if is_group else '单聊'
-        self.setContent(f'绑定成功，已自动填入{target} OpenID')
+        self.setContent(gt('绑定成功，已自动填入{0} OpenID').format(target))
         self.openid_bound.emit(is_group, openid)
 
     def _on_bind_finished(self) -> None:

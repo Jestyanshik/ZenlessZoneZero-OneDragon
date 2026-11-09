@@ -11,6 +11,7 @@ from one_dragon_qt.utils.layout_utils import IconSize, Margins
 from one_dragon_qt.widgets.adapter_init_mixin import AdapterInitMixin
 from one_dragon_qt.widgets.multi_selection_combo_box import MultiSelectionComboBox
 from one_dragon_qt.widgets.setting_card.setting_card_base import SettingCardBase
+from one_dragon.utils.i18_utils import gt
 
 
 class MultiSelectionComboBoxSettingCard(SettingCardBase, AdapterInitMixin):
@@ -253,7 +254,7 @@ class MultiSelectionComboBoxSettingCard(SettingCardBase, AdapterInitMixin):
                 desc = f"已选 {len(selected_items)} 项"
             self.setContent(desc)
         else:
-            self.setContent("未选择")
+            self.setContent(gt("未选择"))
 
     def set_value(self, value: list, emit_signal: bool = True) -> None:
         """设置多选下拉框的值。"""

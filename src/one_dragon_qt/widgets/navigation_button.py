@@ -3,6 +3,8 @@ from collections.abc import Callable
 from PySide6.QtGui import QPainter
 from qfluentwidgets import FluentIconBase, NavigationBarPushButton
 
+from one_dragon.utils.i18_utils import gt
+
 
 class NavigationButton(NavigationBarPushButton):
     """导航栏自定义按钮的基类。
@@ -20,7 +22,7 @@ class NavigationButton(NavigationBarPushButton):
         on_click: Callable[[], None],
         parent=None,
     ) -> None:
-        super().__init__(icon, text, False, parent)
+        super().__init__(icon, gt(text), False, parent)
         self.setObjectName(object_name)
         self.on_click = on_click
 
@@ -43,10 +45,10 @@ class NavigationToggleButton(NavigationButton):
 
         self._icon_off = icon_off
         self._icon_on = icon_on
-        self._tooltip_off = tooltip_off
-        self._tooltip_on = tooltip_on
+        self._tooltip_off = gt(tooltip_off)
+        self._tooltip_on = gt(tooltip_on)
         self._active = False
-        self.setToolTip(tooltip_off)
+        self.setToolTip(self._tooltip_off)
 
     @property
     def active(self) -> bool:

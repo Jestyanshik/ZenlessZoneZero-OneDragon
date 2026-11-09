@@ -30,6 +30,7 @@ def compile_po_files():
     for model in ['game', 'ui']:
         for lang in ['zh', 'en']:
             compile_lang(model, lang)
+    compile_lang('ui', 'ru')
 
 
 if __name__ == '__main__':

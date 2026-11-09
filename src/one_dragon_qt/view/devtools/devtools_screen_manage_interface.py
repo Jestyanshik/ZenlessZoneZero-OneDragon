@@ -960,7 +960,7 @@ class DevtoolsScreenManageInterface(VerticalScrollInterface, HistoryMixin):
         except Exception as e:
             log.error('解析失败', exc_info=True)
             self.show_info_bar(
-                '解析失败',
+                gt('解析失败'),
                 f'{attr_name}: {e}',
                 icon=InfoBarIcon.ERROR,
                 duration=5000,
@@ -1031,7 +1031,7 @@ class DevtoolsScreenManageInterface(VerticalScrollInterface, HistoryMixin):
             # 如果解析失败，不进行修改
             log.error('解析失败', exc_info=True)
             self.show_info_bar(
-                '解析失败',
+                gt('解析失败'),
                 f'{col_meta.display_name}: {e}',
                 icon=InfoBarIcon.ERROR,
                 duration=5000,

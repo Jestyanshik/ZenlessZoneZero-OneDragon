@@ -37,6 +37,7 @@ from zzz_od.gui.dialog.pre_flight_check_dialog import (
     PreFlightCheckDialog,
     check_pre_flight,
 )
+from one_dragon.utils.i18_utils import gt
 
 
 class ButtonGroup(QWidget):
@@ -390,7 +391,7 @@ class HomeInterface(BaseInterface):
         h2_layout.addStretch()
 
         # 启动游戏按钮布局
-        self.start_button = PillPushButton(FluentIcon.PLAY_SOLID, '启动一条龙')
+        self.start_button = PillPushButton(FluentIcon.PLAY_SOLID, gt('启动一条龙'))
         self.start_button.setObjectName("start_button")
         self.start_button.setFont(QFont("Microsoft YaHei", 16, QFont.Weight.Bold))
         self.start_button.setFixedHeight(48)
@@ -563,9 +564,9 @@ class HomeInterface(BaseInterface):
         self._ready = len(issues) == 0
         self._apply_button_icon()
         if self._ready:
-            self.start_button.setText('启动一条龙')
+            self.start_button.setText(gt('启动一条龙'))
         else:
-            self.start_button.setText(f'{len(issues)} 项待配置 ')
+            self.start_button.setText(gt('{0} 项待配置 ').format(len(issues)))
 
     def _find_widget_by_name(self, name: str) -> QWidget | None:
         stacked = self.main_window.stackedWidget
@@ -635,7 +636,7 @@ class HomeInterface(BaseInterface):
             self._update_start_button_style_from_banner()
             self.ctx.signal.reload_banner = False
             if show_notification:
-                self._show_info_bar("背景已更新", "新的背景已成功应用", 3000)
+                self._show_info_bar(gt("背景已更新"), gt("新的背景已成功应用"), 3000)
         except Exception as e:
             log.error(f"刷新背景时出错: {e}")
 

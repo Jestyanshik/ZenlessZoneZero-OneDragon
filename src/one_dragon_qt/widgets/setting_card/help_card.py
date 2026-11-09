@@ -1,5 +1,5 @@
 from qfluentwidgets import FluentIcon, HyperlinkCard
-from one_dragon.utils.i18_utils import gt
+from one_dragon.utils.i18_utils import get_ui_language, gt
 
 
 class HelpCard(HyperlinkCard):
@@ -9,7 +9,12 @@ class HelpCard(HyperlinkCard):
                  title: str = '使用说明',
                  content: str = '先看说明 再使用与提问',
                  parent=None):
-        super().__init__(url, text, FluentIcon.HELP, gt(title), gt(content), parent)
-        self.setFixedHeight(50)
+        super().__init__(url, gt(text), FluentIcon.HELP, gt(title), gt(content), parent)
+        if get_ui_language() == 'ru':
+            self.setMinimumHeight(50)
+            self.contentLabel.setWordWrap(True)
+            self.contentLabel.setToolTip(self.contentLabel.text())
+        else:
+            self.setFixedHeight(50)
         if not url:
             self.linkButton.setVisible(False)

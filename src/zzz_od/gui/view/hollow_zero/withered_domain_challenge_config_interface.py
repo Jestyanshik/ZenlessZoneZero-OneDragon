@@ -233,7 +233,7 @@ class WitheredDomainChallengeConfigInterface(VerticalScrollInterface):
             self._update_pathfinding_input_display()
 
         if is_sample:
-            self._update_error_message('当前为默认配置，点击复制后可修改')
+            self._update_error_message(gt('当前为默认配置，点击复制后可修改'))
         else:
             self._update_error_message('')
 

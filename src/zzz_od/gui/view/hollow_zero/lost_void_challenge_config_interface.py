@@ -276,7 +276,7 @@ class LostVoidChallengeConfigInterface(VerticalScrollInterface):
         self.region_type_priority_input.setDisabled(not chosen or is_sample)
 
         if is_sample:
-            self._update_error_message('当前为默认配置，点击复制后可修改')
+            self._update_error_message(gt('当前为默认配置，点击复制后可修改'))
         else:
             self._update_error_message('')
 

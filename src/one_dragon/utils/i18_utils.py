@@ -6,14 +6,17 @@ from one_dragon.utils import os_utils
 
 _gt = {}
 _default_lang = 'zh'
+_ui_lang = 'zh'
 
 
-def detect_language():
+def detect_language() -> str:
     """自动检测系统语言"""
     try:
         system_locale = locale.getdefaultlocale()[0]
         if system_locale and system_locale.startswith('zh'):
             return 'zh'
+        elif system_locale and system_locale.startswith('ru'):
+            return 'ru'
         else:
             return 'en'
     except Exception:
@@ -50,6 +53,10 @@ def gt(msg: str | None, model: str = 'ui', lang: str | None = None) -> str:
     if msg is None or len(msg) == 0:
         return ''
     if lang is None:
+        lang = _ui_lang if model == 'ui' else _default_lang
+    elif lang == 'auto' and model == 'ui':
+        lang = detect_language()
+    elif lang == 'ru' and model != 'ui':
         lang = _default_lang
     if model not in _gt:
         _gt[model] = {}
@@ -69,14 +76,19 @@ def coalesce_gt(msg: str | None, default: str, model: str = 'ui', lang: str | No
     :param lang:
     :return:
     """
-    if lang is None:
-        lang = _default_lang
     return gt(msg if msg is not None else default, model, lang)
 
 
-def update_default_lang(lang: str):
-    global _default_lang
-    _default_lang = lang
+def update_default_lang(lang: str) -> None:
+    global _default_lang, _ui_lang
+    system_lang = detect_language() if lang in ('auto', 'ru') else lang
+    _ui_lang = system_lang if lang == 'auto' else lang
+    # 俄语只用于界面。游戏识别和下载源继续使用已有的中英文设置。
+    _default_lang = ('zh' if system_lang == 'zh' else 'en') if _ui_lang == 'ru' else _ui_lang
+
+
+def get_ui_language() -> str:
+    return _ui_lang
 
 
 def get_default_lang() -> str:
