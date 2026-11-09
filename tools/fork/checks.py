@@ -12,13 +12,17 @@ import polib
 
 from one_dragon.base.controller.pc_button import scan_code_keyboard as scan
 from one_dragon.base.controller.pc_button.keyboard_mouse_controller import KeyboardMouseController
+from one_dragon.base.geometry.point import Point
+from one_dragon.base.matcher.match_result import MatchResult
 from one_dragon.base.operation.operation_round_result import OperationRoundResult, OperationRoundResultEnum
 from one_dragon.utils import i18_utils
 from zzz_od.application import npc_interaction
 from zzz_od.application.hou_hou_bakery.hou_hou_bakery_app import HouHouBakeryApp
 from zzz_od.application.random_play.random_play_app import RandomPlayApp
-from zzz_od.application.random_play.random_play_config import RandomPlayTransportPoint
+from zzz_od.application.random_play.random_play_config import RANDOM_AGENT_NAME, RandomPlayTransportPoint
 from zzz_od.application.scratch_card.scratch_card_app import ScratchCardApp
+from zzz_od.controller.zzz_pc_controller import ZPcController
+from zzz_od.game_data.agent import AgentEnum
 
 SUCCESS = OperationRoundResult(OperationRoundResultEnum.SUCCESS)
 RETRY = OperationRoundResult(OperationRoundResultEnum.RETRY)
@@ -209,6 +213,111 @@ def test_video_store_has_bounded_failure() -> None:
     app.node_retry_times = 10
     assert app.handle_interaction_dialog().is_fail
     assert app.wait_run().is_fail
+
+
+@pytest.mark.parametrize('scan_codes', [False, True])
+def test_npc_controller_checks_focus_and_uses_configured_backend(scan_codes: bool) -> None:
+    ctrl = object.__new__(ZPcController)
+    ctrl.action_keys = {'interact': 'f'}
+    ctrl.background_mode = False
+    ctrl.game_win = SimpleNamespace(is_win_active=False)
+    ctrl.btn_controller = ctrl.keyboard_controller = Mock(use_scan_codes=scan_codes)
+    assert not ctrl.press_npc_interact()
+    ctrl.keyboard_controller.press.assert_not_called()
+    ctrl.game_win.is_win_active = True
+    assert ctrl.press_npc_interact()
+    ctrl.keyboard_controller.press.assert_called_once_with('f', 0.2)
+
+
+def test_random_promoter_waits_for_fresh_confirmation_and_business_screen() -> None:
+    app = make_app(RandomPlayApp)
+    app.config = SimpleNamespace(agent_name_1=RANDOM_AGENT_NAME, agent_name_2=RANDOM_AGENT_NAME)
+    app.run_record = Mock()
+    app.run_record.get_current_dt.return_value = '20261108'
+    app._promoter_confirmation_sent = False
+    app.round_by_click_area = Mock(return_value=SUCCESS)
+    app.round_by_find_and_click_area.return_value = SUCCESS
+    visible = {'选择宣传员'}
+    app.round_by_find_area.side_effect = lambda _, screen, area: SUCCESS if area in visible else RETRY
+    assert app.choose_promoter().is_success
+    app.round_by_click_area.assert_called_once_with('影像店营业', '宣传员-1', retry_wait=1)
+    app.round_by_find_and_click_area.assert_not_called()
+    assert app.confirm_promoter().result is OperationRoundResultEnum.RETRY
+    assert app.confirm_promoter().result is OperationRoundResultEnum.RETRY
+    app.round_by_find_and_click_area.assert_called_once_with(app.last_screenshot, '影像店营业', '确认')
+    visible.clear()
+    assert app.confirm_promoter().result is OperationRoundResultEnum.RETRY
+    visible.add('经营状况')
+    assert app.confirm_promoter().is_success
+
+
+def test_named_promoters_use_original_names_and_report_unavailable_agents() -> None:
+    app = make_app(RandomPlayApp)
+    p, v = AgentEnum.PROMEIA.value, AgentEnum.VELINA.value
+    assert (p.agent_name, v.agent_name) == ('普罗米娅', '维琳娜')
+    assert i18_utils.gt(p.agent_name, lang='ru') == 'Промея'
+    assert i18_utils.gt(v.agent_name, lang='ru') == 'Велина Эйргид'
+    app.config = SimpleNamespace(agent_name_1=p.agent_name, agent_name_2=v.agent_name)
+    app.run_record = Mock()
+    app.run_record.get_current_dt.return_value = '20261108'
+    app._store_area_visible = lambda name: name == '选择宣传员'
+    app._try_select_agent = Mock(side_effect=[False, True])
+    app.round_by_click_area = Mock()
+    assert app.choose_promoter().status == v.agent_name
+    assert [args.args[0] for args in app._try_select_agent.call_args_list] == [p.agent_name, v.agent_name]
+    app._try_select_agent.side_effect = None
+    app._try_select_agent.return_value = False
+    app.node_retry_times = 2
+    assert app.choose_promoter().is_fail
+    app.round_by_click_area.assert_not_called()
+
+
+def test_velina_uses_second_avatar_and_checks_click(monkeypatch: pytest.MonkeyPatch) -> None:
+    app = make_app(RandomPlayApp)
+    area = SimpleNamespace(rect=object(), left_top=Point(20, 40))
+    app.ctx.screen_loader.get_area.return_value = area
+    app.ctx.tm = Mock()
+    app.ctx.tm.match_one_by_feature.side_effect = [None, MatchResult(1, 4, 6, 8, 10)]
+    app.ctx.controller.click.return_value = False
+    monkeypatch.setattr('zzz_od.application.random_play.random_play_app.cv2_utils.crop_image_only', Mock())
+    assert not app._try_select_agent('维琳娜', area)
+    assert [args.args[2] for args in app.ctx.tm.match_one_by_feature.call_args_list] == [
+        'avatar_velina', 'avatar_velina_shade_of_leisure',
+    ]
+    assert app.ctx.controller.click.call_args.args[0].tuple() == (28, 51)
+
+
+def test_video_theme_clicks_ocr_center_and_shelf_waits_for_evidence() -> None:
+    app = make_app(RandomPlayApp)
+    app._all_video_themes = ['喜剧']
+    app._need_video_themes = ['喜剧']
+    app._current_idx = 1
+    app.ctx.screen_loader.get_area.return_value = SimpleNamespace(rect=object(), left_top=Point(20, 40))
+    app.ctx.ocr = Mock()
+    app.ctx.ocr.crop_and_run_ocr.return_value = {'喜剧': SimpleNamespace(max=MatchResult(1, 4, 6, 8, 10))}
+    assert app.choose_theme().is_success
+    assert app.ctx.controller.click.call_args.args[0].tuple() == (28, 51)
+    app.round_by_find_and_click_area.return_value = SUCCESS
+    assert app.choose_onshelf().result is OperationRoundResultEnum.RETRY
+    app.round_by_find_and_click_area.return_value = RETRY
+    assert app.choose_onshelf().result is OperationRoundResultEnum.RETRY
+    app.round_by_find_area.return_value = SUCCESS
+    assert app.choose_onshelf().is_success
+    assert app.round_by_find_and_click_area.call_count == 2
+
+
+def test_video_store_recovery_keeps_the_failure_and_leaves_known_screens() -> None:
+    app = make_app(RandomPlayApp)
+    app._previous_node = None
+    app._previous_round_result = OperationRoundResult(OperationRoundResultEnum.FAIL, '未找到配置的宣传员')
+    app.check_and_update_current_screen = Mock(return_value=None)
+    app._store_area_visible = lambda name: name == '选择宣传员'
+    result = app.recover_store_failure()
+    assert result.result is OperationRoundResultEnum.RETRY
+    app.round_by_find_and_click_area.assert_called_once_with(app.last_screenshot, '影像店营业', '返回')
+    app.check_and_update_current_screen.return_value = '大世界-普通'
+    result = app.recover_store_failure()
+    assert result.is_fail and result.status == '未找到配置的宣传员'
 
 
 def test_russian_catalog_and_game_domain() -> None:
