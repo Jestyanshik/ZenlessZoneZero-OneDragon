@@ -82,8 +82,8 @@ try {
     throw "Merge stopped. Review the retained worktree at $Destination. No draft PR was opened."
 }
 
-Set-Content -LiteralPath (Join-Path $Destination 'tools/fork/upstream-base.txt') -Value $Tag -Encoding ascii
-Set-Content -LiteralPath (Join-Path $Destination 'tools/fork/upstream-commit.txt') -Value $targetCommit -Encoding ascii
+[System.IO.File]::WriteAllText((Join-Path $Destination 'tools/fork/upstream-base.txt'), "$Tag`n")
+[System.IO.File]::WriteAllText((Join-Path $Destination 'tools/fork/upstream-commit.txt'), "$targetCommit`n")
 Push-Location -LiteralPath $Destination
 $previousPythonPath = $env:PYTHONPATH
 $previousQtPlatform = $env:QT_QPA_PLATFORM
@@ -108,7 +108,7 @@ try {
 }
 
 Invoke-RepoGit $Destination @('add', '--', 'tools/fork/upstream-base.txt', 'tools/fork/upstream-commit.txt')
-Invoke-RepoGit $Destination @('diff', '--cached', '--check')
+Invoke-RepoGit $Destination @('-c', 'core.whitespace=cr-at-eol', 'diff', '--cached', '--check')
 Invoke-RepoGit $Destination @('commit', '-m', "chore(upstream): integrate $Tag")
 Write-Host "Verified update branch $branch at $Destination."
 
