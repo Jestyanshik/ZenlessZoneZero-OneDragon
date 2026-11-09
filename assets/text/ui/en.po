@@ -744,3 +744,7 @@ msgstr "Custom Homepage Background"
 
 msgid "设置后重启脚本生效"
 msgstr "Restart script for changes to take effect"
+
+msgid "此构建不执行代码同步，请下载新版构建包"
+msgstr ""
+"This build uses a fixed source snapshot. Download a new build to update."

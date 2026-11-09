@@ -1,0 +1,64 @@
+name: Fork verification and Windows artifact
+
+on:
+  push:
+    branches: [main, codex/ru-ui, 'codex/upstream-*']
+  pull_request:
+    branches: [main, codex/ru-ui]
+  workflow_dispatch:
+    inputs:
+      build_windows:
+        description: Build an unsigned Windows snapshot artifact
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  QT_QPA_PLATFORM: offscreen
+  VGAMEPAD_SKIP_VIGEMBUS_INSTALL: 'true'
+  PYTHONUTF8: '1'
+
+jobs:
+  verify:
+    if: ${{ github.repository != 'OneDragon-Anything/ZenlessZoneZero-OneDragon' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install locked Windows dependencies
+        run: uv sync --locked --group dev
+      - name: Check modified Python files
+        shell: pwsh
+        run: |
+          $base = (Get-Content tools/fork/upstream-commit.txt -Raw).Trim()
+          $paths = @(git diff --name-only --diff-filter=ACM $base HEAD -- '*.py')
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if ($paths) {
+            uv run --locked --group dev ruff check --select F821,F822,F823 @paths
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+      - name: Verify Russian catalog, keyboard input, and NPC screens
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = 'src'
+          uv run --locked --group dev python -m pytest -q tools/fork/checks.py
+      - name: Build Windows snapshot
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_windows }}
+        run: uv run --locked --group dev python tools/fork/build_windows.py --output dist/OneDragon-Fork-windows.zip
+      - name: Upload Windows artifact
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_windows }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneDragon-Fork-windows
+          path: dist/OneDragon-Fork-windows.zip
+          if-no-files-found: error

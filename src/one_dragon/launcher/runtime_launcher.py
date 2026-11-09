@@ -18,6 +18,8 @@ class RuntimeLauncher(ExeLauncher):
 
     def _sync_code(self) -> None:
         """同步代码：首次运行时克隆，后续运行时自动更新"""
+        if (Path(sys.executable).parent / 'fork-build.json').is_file():
+            return
         pre_modules = set(sys.modules)
 
         from one_dragon.base.operation.one_dragon_env_context import OneDragonEnvContext

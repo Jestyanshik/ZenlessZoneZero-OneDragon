@@ -1,4 +1,7 @@
 <!-- markdownlint-restore -->
+
+**Fork documentation:** [installation, input settings, and updates](../README.md).
+
 <div align="center">
 
 <img src="https://socialify.git.ci/DoctorReid/ZenlessZoneZero-OneDragon/image?description=1&font=Inter&language=1&logo=https%3A%2F%2Fgithub.com%2FDoctorReid%2FZenlessZoneZero-OneDragon%2Fblob%2Fmain%2F.github%2Fimage%2Fellen.png%3Fraw%3Dtrue&name=1&owner=1&pattern=Charlie+Brown&theme=Light" alt="ZenlessZoneZero-OneDragon"/>

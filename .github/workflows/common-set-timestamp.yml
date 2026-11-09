@@ -9,6 +9,7 @@ on:
 
 jobs:
   set-timestamp:
+    if: ${{ github.repository == 'OneDragon-Anything/ZenlessZoneZero-OneDragon' }}
     runs-on: ubuntu-latest
     outputs:
       build_timestamp: ${{ steps.generate.outputs.build_timestamp }}

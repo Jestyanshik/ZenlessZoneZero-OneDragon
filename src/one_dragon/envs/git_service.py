@@ -559,6 +559,11 @@ class _FetchProgressRemoteCallbacks(RemoteCallbacks):
         self._emit(f'更新引用: {refname}')
 
 
+def _is_fork_source() -> bool:
+    root = Path(os_utils.get_work_dir())
+    return (root / 'fork-build.json').is_file() or (root / 'tools/fork/upstream-base.txt').is_file()
+
+
 class GitService:
 
     def __init__(
@@ -1695,6 +1700,8 @@ class GitService:
         initial_tag: str | None = None,
     ) -> tuple[GitSyncStatus, str]:
         """更新最新代码，并返回明确的同步状态和中性结果文案。"""
+        if _is_fork_source():
+            return GitSyncStatus.LOCAL_CHANGES, gt('此构建不执行代码同步，请下载新版构建包')
         try:
             if self.is_initial_checkout_pending():
                 status, _ = self._clone_repository(progress_callback, initial_tag)
@@ -1792,7 +1799,7 @@ class GitService:
         """
         更新remote
         """
-        if not self.check_repo_exists():
+        if _is_fork_source() or not self.check_repo_exists():
             return
 
         try:
@@ -1807,6 +1814,8 @@ class GitService:
         Returns:
             (是否成功, 提示消息)
         """
+        if _is_fork_source():
+            return False, gt('此构建不执行代码同步，请下载新版构建包')
         try:
             repo = self._open_repo()
             obj = repo.revparse_single(commit_id)
@@ -1841,11 +1850,17 @@ class GitService:
             return '', ''
 
         heads = None
+        fork_source = _is_fork_source()
+        restored = True
         try:
             for repository, repository_url in self._get_repository_candidates():
                 repository_name = self._get_repository_item(repository).ui_text
                 try:
-                    remote = self._ensure_remote(repository_url)
+                    remote = (
+                        self._open_repo().remotes.create_anonymous(repository_url)
+                        if fork_source
+                        else self._ensure_remote(repository_url)
+                    )
                     callbacks = self._create_fetch_callbacks(None, 0.0, 1.0)
                     with self._temporary_fetch_timeout():
                         heads = remote.list_heads(callbacks=callbacks, proxy=self._get_proxy_address())
@@ -1854,7 +1869,8 @@ class GitService:
                 except Exception:
                     log.warning(f'代码源 {repository_name} 获取标签失败，尝试下一个代码源', exc_info=True)
         finally:
-            restored = self._restore_origin()
+            if not fork_source:
+                restored = self._restore_origin()
 
         if heads is None or not restored:
             log.error('获取最新标签失败')

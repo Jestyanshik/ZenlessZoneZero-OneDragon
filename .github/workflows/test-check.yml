@@ -12,6 +12,7 @@ env:
 
 jobs:
   test-check:
+    if: ${{ github.repository == 'OneDragon-Anything/ZenlessZoneZero-OneDragon' }}
     runs-on: windows-latest
     steps:
       - name: Checkout code
