@@ -9,6 +9,7 @@ from unittest.mock import Mock, call
 
 import pytest
 import polib
+import yaml
 
 from one_dragon.base.controller.pc_button import scan_code_keyboard as scan
 from one_dragon.base.controller.pc_button.keyboard_mouse_controller import KeyboardMouseController
@@ -264,6 +265,17 @@ def test_lost_void_entrance_checks_the_screen_after_closing_update_notice() -> N
     app.check_and_update_current_screen.assert_not_called()
     assert app.choose_lost_void_entry().status == '迷失之地-入口-周期'
     app.round_by_ocr_and_click.assert_not_called()
+
+
+def test_lost_void_periodic_entrance_does_not_require_the_tab_label() -> None:
+    folder = Path(__file__).resolve().parents[2] / 'assets/game_data/screen_info'
+    source = yaml.safe_load((folder / 'lost_void_entry_periodic.yml').read_text(encoding='utf-8'))
+    merged = yaml.safe_load((folder / '_od_merged.yml').read_text(encoding='utf-8'))
+    runtime = next(screen for screen in merged if screen['screen_id'] == source['screen_id'])
+    for screen in (source, runtime):
+        assert {area['area_name'] for area in screen['area_list'] if area['id_mark']} == {
+            '区域-矩阵行动', '探索收集',
+        }
 
 
 @pytest.mark.parametrize('debug', [False, True])

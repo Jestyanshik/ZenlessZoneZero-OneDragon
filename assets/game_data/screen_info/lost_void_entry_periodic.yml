@@ -4,7 +4,7 @@ app_id: lost_void
 pc_alt: false
 area_list:
 - area_name: 按钮-周期
-  id_mark: true
+  id_mark: false
   pc_rect:
   - 1453
   - 26
@@ -59,7 +59,7 @@ area_list:
   color_range: null
   goto_list: []
 - area_name: 区域-矩阵行动
-  id_mark: false
+  id_mark: true
   pc_rect:
   - 745
   - 233
