@@ -1,5 +1,6 @@
 import time
 
+from one_dragon.base.geometry.point import Point
 from one_dragon.base.operation.operation_edge import node_from
 from one_dragon.base.operation.operation_node import operation_node
 from one_dragon.base.operation.operation_notify import NotifyTiming, node_notify
@@ -89,6 +90,12 @@ class ScratchCardApp(ZApplication):
         result = self.round_by_ocr_and_click(self.last_screenshot, '只是来看刮刮卡和报纸', area=area)
         if result.is_success:
             return self.round_retry(status=result.status, wait=1)
+
+        result = self.round_by_find_area(self.last_screenshot, '报刊亭', '嗷呜对话')
+        if result.is_success:
+            # 选项出现前，点击对话框右下角的继续箭头。
+            clicked = self.ctx.controller.click(Point(1483, 992))
+            return self.round_retry('嗷呜对话' if clicked else '点击失败 嗷呜对话', wait=1)
 
         result = self.round_by_find_and_click_area(self.last_screenshot, '报刊亭', '嗷呜被你叫醒了')
         if result.is_success:

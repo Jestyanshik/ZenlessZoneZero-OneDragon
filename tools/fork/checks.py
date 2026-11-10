@@ -167,6 +167,23 @@ def test_scratch_card_checks_title_before_click() -> None:
     app = make_app(ScratchCardApp)
     assert app.click_scratch_card().status == '刮刮卡界面未继续'
     assert app.round_by_find_and_click_area.call_args.args[2] == '嗷呜标题'
+    app.ctx.controller.click.assert_not_called()
+
+
+def test_scratch_card_advances_sleeping_dialogue_before_choosing() -> None:
+    app = make_app(ScratchCardApp)
+    app.round_by_find_area.side_effect = lambda _, screen, area: SUCCESS if area == '嗷呜对话' else RETRY
+
+    result = app.click_scratch_card()
+    assert result.result is OperationRoundResultEnum.RETRY and result.status == '嗷呜对话'
+    assert app.ctx.controller.click.call_args.args[0].tuple() == (1483, 992)
+
+    app.round_by_ocr_and_click.side_effect = lambda _, word, **kwargs: (
+        OperationRoundResult(OperationRoundResultEnum.SUCCESS, word) if word == '叫醒他' else RETRY
+    )
+    result = app.click_scratch_card()
+    assert result.result is OperationRoundResultEnum.RETRY and result.status == '叫醒他'
+    assert app.ctx.controller.click.call_count == 1
 
 
 @pytest.mark.parametrize('marker', ['嗷呜对话', '叫醒他'])

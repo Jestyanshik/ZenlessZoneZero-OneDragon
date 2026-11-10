@@ -2,7 +2,7 @@
 
 The scratch card and bakery tasks first verify an expected screen marker. They allow up to three presses with a fresh screenshot between attempts. The scratch-card task moves forward once, before the first press. The bakery's centered-box screen tries the existing mouse click first, then tries the configured interaction key once if the screen persists.
 
-The scratch-card task also recognizes the sleeping NPC dialogue and its **Wake him up!** option as evidence that interaction has opened. It then uses the existing dialogue and ticket flow.
+The scratch-card task recognizes the sleeping NPC dialogue as evidence that interaction has opened. If the choice is still hidden, it clicks the advance arrow on the recognized dialogue. Once **Wake him up!** appears, the task selects it and continues to the ticket.
 
 Under **Settings → Game settings → Key settings → Keyboard keys**, **Keyboard input method** selects the input method for foreground game keys. **Standard (pynput)** is the default for new accounts. **Windows scan code** also applies to these tasks' movement and interaction keys. The setting is per account. Background mode retains its existing gamepad input.
 
