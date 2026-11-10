@@ -4,6 +4,8 @@ The video-store task uses the account's foreground keyboard method for both move
 
 The task checks the expected NPC dialogue, ledger, or business screen before proceeding. Selecting a promoter and confirming the selection use separate frames. The task waits for the business screen before opening the video list. Named agents are matched by game name or avatar. If neither configured agent can be found, the task reports an error. The existing Random option uses the documented slots.
 
+The business screen can be confirmed by its title or by the **Start business** / **In business** label at the bottom. This lets the task continue if the title is temporarily unreadable. The first-entry ledger is handled before checking the footer.
+
 Manual tape selection clicks the center of the recognized theme. The shelf step checks a new frame after each click and advances only when the tape is shown as shelved. On a recognized store page after an error, the task attempts to return to the world and retains the original failure in the run record.
 
 ## Manual verification

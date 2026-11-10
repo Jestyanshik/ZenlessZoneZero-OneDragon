@@ -109,10 +109,21 @@ class RandomPlayApp(ZApplication):
         )
 
     def _business_marker(self) -> str | None:
-        for area_name in ('经营状况', '昨日账本'):
-            if self.round_by_find_area(self.last_screenshot, '影像店营业', area_name).is_success:
-                return area_name
+        if self._store_area_visible('昨日账本'):
+            return '昨日账本'
+        if self._business_page_visible():
+            return '经营状况'
         return None
+
+    def _business_footer_marker(self) -> str | None:
+        for marker in (self.STATUS_ALREADY_RUNNING, '开始营业'):
+            if self._store_area_visible(marker):
+                return marker
+        return None
+
+    def _business_page_visible(self) -> bool:
+        # 顶部标题识别不到时，用经营页面底部的按钮文字确认。
+        return self._store_area_visible('经营状况') or self._business_footer_marker() is not None
 
     def _narration_visible(self) -> bool:
         if self.config.transport_point != RandomPlayTransportPoint.POINT_3.value.value:
@@ -162,7 +173,7 @@ class RandomPlayApp(ZApplication):
             return self.round_retry(wait=1)
         # 识别到"经营状况"就点击一下以保证在该分支。二次运行时，有极低概率"无人咨询"变成"咨询中"并被默认跳转
         result = self.round_by_find_and_click_area(self.last_screenshot, '影像店营业', '经营状况')
-        if result.is_success:
+        if result.is_success or self._business_footer_marker() is not None:
             return self.round_success(wait=1)
 
         if self.node_retry_times >= self.node_max_retry_times:
@@ -172,11 +183,10 @@ class RandomPlayApp(ZApplication):
     @node_from(from_name='等待经营画面加载')
     @operation_node(name='识别营业状态')
     def check_running(self) -> OperationRoundResult:
-        result = self.round_by_find_area(self.last_screenshot, '影像店营业', '正在营业')
-        if result.is_success:
-            return self.round_success(RandomPlayApp.STATUS_ALREADY_RUNNING)
-        result = self.round_by_find_area(self.last_screenshot, '影像店营业', '开始营业')
-        if result.is_success:
+        marker = self._business_footer_marker()
+        if marker == self.STATUS_ALREADY_RUNNING:
+            return self.round_success(marker)
+        if marker is not None:
             return self.round_success()
 
         return self.round_retry(status='等待营业状态', wait=1)
@@ -196,7 +206,7 @@ class RandomPlayApp(ZApplication):
         """
         if self._store_area_visible('选择宣传员'):
             return self.round_success('选择宣传员')
-        if not self._store_area_visible('经营状况'):
+        if not self._business_page_visible():
             return self.round_retry('未找到 经营状况', wait=1)
         return self.round_by_click_area('影像店营业', '宣传员入口', retry_wait=1)
 
@@ -257,7 +267,7 @@ class RandomPlayApp(ZApplication):
             elif not self._promoter_confirmation_sent:
                 result = self.round_by_find_and_click_area(self.last_screenshot, '影像店营业', '确认')
                 self._promoter_confirmation_sent = result.is_success
-        elif self._promoter_confirmation_sent and self._store_area_visible('经营状况'):
+        elif self._promoter_confirmation_sent and self._business_page_visible():
             return self.round_success('经营状况')
         if self.node_retry_times >= self.node_max_retry_times:
             log.warning('Random Play did not return to business status after promoter selection: confirmation_sent=%s',
@@ -303,9 +313,8 @@ class RandomPlayApp(ZApplication):
     @node_from(from_name='确认宣传员')
     @operation_node(name='识别录像带主题')
     def check_video_theme(self) -> OperationRoundResult:
-        result = self.round_by_find_area(self.last_screenshot, '影像店营业', '经营状况')
-        if not result.is_success:
-            return self.round_retry(status=result.status, wait=1)
+        if not self._business_page_visible():
+            return self.round_retry('未找到 经营状况', wait=1)
 
         areas = [
             self.ctx.screen_loader.get_area('影像店营业', '录像带主题-1'),
@@ -430,8 +439,7 @@ class RandomPlayApp(ZApplication):
     @node_from(from_name='上架筛选', status=STATUS_ALL_VIDEO_CHOOSE)
     @operation_node(name='返回')
     def back(self) -> OperationRoundResult:
-        result = self.round_by_find_area(self.last_screenshot, '影像店营业', '经营状况')
-        if result.is_success:
+        if self._business_page_visible():
             return self.round_success()
 
         return self.round_by_find_and_click_area(self.last_screenshot, '影像店营业', '返回',
@@ -481,7 +489,9 @@ class RandomPlayApp(ZApplication):
             return self.round_fail(failure)
 
         # 只在已识别的经营页面点击返回，保留原始失败状态。
-        if any(self._store_area_visible(marker) for marker in ('选择宣传员', '上架筛选', '经营状况')):
+        if self._business_page_visible() or any(
+            self._store_area_visible(marker) for marker in ('选择宣传员', '上架筛选')
+        ):
             self.round_by_find_and_click_area(self.last_screenshot, '影像店营业', '返回')
         if self.node_retry_times >= self.node_max_retry_times:
             log.warning('Random Play recovery could not confirm the world: %s', failure)

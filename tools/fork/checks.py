@@ -254,6 +254,37 @@ def test_video_store_has_bounded_failure() -> None:
     assert app.wait_run().is_fail
 
 
+@pytest.mark.parametrize('footer', ['开始营业', '正在营业'])
+def test_video_store_recognizes_business_screen_without_title(footer: str) -> None:
+    app = make_app(RandomPlayApp)
+    visible = {footer}
+    app.round_by_find_area.side_effect = lambda _, screen, area: SUCCESS if area in visible else RETRY
+    app.round_by_click_area = Mock(return_value=SUCCESS)
+
+    assert app._business_marker() == '经营状况'
+    assert app.wait_run().is_success
+    assert app.check_running().status == (footer if footer == '正在营业' else None)
+    app.round_by_find_and_click_area.assert_called_once_with(app.last_screenshot, '影像店营业', '经营状况')
+    if footer == '开始营业':
+        assert app.click_promoter_entry().is_success
+        app.round_by_click_area.assert_called_once_with('影像店营业', '宣传员入口', retry_wait=1)
+
+    app.round_by_click_area.reset_mock()
+    visible.clear()
+    assert not app.click_promoter_entry().is_success
+    app.round_by_click_area.assert_not_called()
+
+
+def test_video_store_closes_ledger_before_using_footer() -> None:
+    app = make_app(RandomPlayApp)
+    visible = {'昨日账本', '开始营业'}
+    app.round_by_find_area.side_effect = lambda _, screen, area: SUCCESS if area in visible else RETRY
+
+    assert app._business_marker() == '昨日账本'
+    assert app.wait_run().result is OperationRoundResultEnum.RETRY
+    app.round_by_find_and_click_area.assert_called_once_with(app.last_screenshot, '影像店营业', '按钮-关闭')
+
+
 @pytest.mark.parametrize('scan_codes', [False, True])
 def test_npc_controller_checks_focus_and_uses_configured_backend(scan_codes: bool) -> None:
     ctrl = object.__new__(ZPcController)
