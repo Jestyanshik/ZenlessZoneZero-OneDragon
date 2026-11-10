@@ -18,6 +18,7 @@ from one_dragon.base.operation.operation_round_result import OperationRoundResul
 from one_dragon.utils import i18_utils
 from zzz_od.application import npc_interaction
 from zzz_od.application.hou_hou_bakery.hou_hou_bakery_app import HouHouBakeryApp
+from zzz_od.application.hollow_zero.lost_void.lost_void_app import LostVoidApp
 from zzz_od.application.random_play.random_play_app import RandomPlayApp
 from zzz_od.application.random_play.random_play_config import RANDOM_AGENT_NAME, RandomPlayTransportPoint
 from zzz_od.application.scratch_card.scratch_card_app import ScratchCardApp
@@ -252,6 +253,33 @@ def test_video_store_has_bounded_failure() -> None:
     app.node_retry_times = 10
     assert app.handle_interaction_dialog().is_fail
     assert app.wait_run().is_fail
+
+
+def test_lost_void_entrance_checks_the_screen_after_closing_update_notice() -> None:
+    app = make_app(LostVoidApp)
+    app.check_and_update_current_screen = Mock(return_value='迷失之地-入口-周期')
+    app.round_by_find_and_click_area.side_effect = [SUCCESS, RETRY]
+
+    assert app.choose_lost_void_entry().result is OperationRoundResultEnum.RETRY
+    app.check_and_update_current_screen.assert_not_called()
+    assert app.choose_lost_void_entry().status == '迷失之地-入口-周期'
+    app.round_by_ocr_and_click.assert_not_called()
+
+
+@pytest.mark.parametrize('debug', [False, True])
+def test_lost_void_unrecognized_entrance_has_a_retry_limit(debug: bool) -> None:
+    app = make_app(LostVoidApp)
+    app.ctx.env_config = SimpleNamespace(is_debug=debug)
+    app.check_and_update_current_screen = Mock(return_value=None)
+    app.round_by_ocr_and_click.return_value = OperationRoundResult(OperationRoundResultEnum.RETRY, '找不到 迷失之地')
+    app.save_screenshot = Mock(return_value='diagnostic-frame')
+
+    result = app.choose_lost_void_entry()
+    assert result.result is OperationRoundResultEnum.RETRY and result.status == '等待画面加载'
+    app.node_retry_times = app.node_max_retry_times
+    assert app.choose_lost_void_entry().is_fail
+    assert app.round_by_ocr_and_click.call_count == 1
+    assert app.save_screenshot.call_count == int(debug)
 
 
 @pytest.mark.parametrize('footer', ['开始营业', '正在营业'])

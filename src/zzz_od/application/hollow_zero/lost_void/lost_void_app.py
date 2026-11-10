@@ -125,26 +125,27 @@ class LostVoidApp(ZApplication):
     @operation_node(name='前往迷失之地-入口', node_max_retry_times=20)
     def choose_lost_void_entry(self) -> OperationRoundResult:
         """前往迷失之地入口"""
-        result = self.round_by_ocr_and_click(self.last_screenshot, '迷失之地')
-        if result.is_success:
-            return self.round_retry('尝试进入迷失之地-入口', wait=1)
-
-        if result.status == '找不到 迷失之地':
-            return self._wait_for_lost_void_entry()
-
-        return self.round_retry(result.status, wait=1)
-
-    def _wait_for_lost_void_entry(self) -> OperationRoundResult:
-        """等待迷失之地入口加载完成。"""
         result = self.round_by_find_and_click_area(self.last_screenshot, '迷失之地-入口', '按钮-更新弹窗-关闭')
         if result.is_success:
             return self.round_retry(result.status, wait=0.5)
 
         screen_name_list = ['迷失之地-入口-周期', '迷失之地-入口-常规']
         screen_name = self.check_and_update_current_screen(self.last_screenshot, screen_name_list=screen_name_list)
-        if screen_name not in screen_name_list:
-            return self.round_wait(status='等待画面加载', wait=1)
-        return self.round_success(status=screen_name)
+        if screen_name in screen_name_list:
+            return self.round_success(status=screen_name)
+
+        if self.node_retry_times >= self.node_max_retry_times:
+            if self.ctx.env_config.is_debug:
+                filename = self.save_screenshot(prefix='lost_void_entry_unrecognized')
+                if filename:
+                    log.warning('Lost Void entrance not recognized. Debug frame: %s', filename)
+            return self.round_fail('未识别到迷失之地入口')
+
+        result = self.round_by_ocr_and_click(self.last_screenshot, '迷失之地')
+        if result.is_success:
+            return self.round_retry('尝试进入迷失之地-入口', wait=1)
+        status = '等待画面加载' if result.status == '找不到 迷失之地' else result.status
+        return self.round_retry(status, wait=1)
 
     @node_from(from_name='前往迷失之地-入口')
     @node_from(from_name='通关后处理')
