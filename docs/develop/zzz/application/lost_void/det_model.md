@@ -34,6 +34,10 @@
 
 模型由迷失之地、恶名狩猎和情报板共同使用。三个应用都在各自流程的 `初始化加载` 节点调用 `LostVoidContext.init_lost_void_det_model`;模型尚未创建或 GPU 配置变化时同步初始化，否则直接复用。战斗前移动只消费已经初始化的模型，不在进入战斗画面后临时加载。
 
+### Combat during navigation
+
+`LostVoidMoveByDet` checks the current frame for combat during both the initial turn and forward movement, at most once per second. When the existing combat detector reports an encounter, navigation releases the forward key and returns `STATUS_IN_BATTLE` to `LostVoidRunLevel`, which starts auto-battle.
+
 ## 4. 模型获取与发布规范
 
 **下载与解压**:`OnnxModelLoader`(`src/one_dragon/yolo/onnx_model_loader.py`)从 `zzz_model` release 下载 `<模型名>.zip`,`extractall` 到 `assets/models/lost_void_det/<模型名>/`。

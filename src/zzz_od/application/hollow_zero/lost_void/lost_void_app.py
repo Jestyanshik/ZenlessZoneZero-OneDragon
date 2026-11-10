@@ -125,6 +125,10 @@ class LostVoidApp(ZApplication):
     @operation_node(name='前往迷失之地-入口', node_max_retry_times=20)
     def choose_lost_void_entry(self) -> OperationRoundResult:
         """前往迷失之地入口"""
+        return self._wait_for_lost_void_entry(try_open=True)
+
+    def _wait_for_lost_void_entry(self, *, try_open: bool = False) -> OperationRoundResult:
+        """等待迷失之地入口加载完成。"""
         result = self.round_by_find_and_click_area(self.last_screenshot, '迷失之地-入口', '按钮-更新弹窗-关闭')
         if result.is_success:
             return self.round_retry(result.status, wait=0.5)
@@ -140,6 +144,9 @@ class LostVoidApp(ZApplication):
                 if filename:
                     log.warning('Lost Void entrance not recognized. Debug frame: %s', filename)
             return self.round_fail('未识别到迷失之地入口')
+
+        if not try_open:
+            return self.round_retry('等待画面加载', wait=1)
 
         result = self.round_by_ocr_and_click(self.last_screenshot, '迷失之地')
         if result.is_success:
@@ -759,7 +766,7 @@ class LostVoidApp(ZApplication):
         return self.round_by_op_result(op_result)
 
     @node_from(from_name='层间移动', status=LostVoidRunLevel.STATUS_COMPLETE)
-    @operation_node(name='通关后处理')
+    @operation_node(name='通关后处理', node_max_retry_times=20)
     def after_complete(self) -> OperationRoundResult:
         result = self._wait_for_lost_void_entry()
         if not result.is_success:

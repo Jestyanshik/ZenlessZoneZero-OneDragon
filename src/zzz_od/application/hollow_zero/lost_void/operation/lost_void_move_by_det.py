@@ -171,6 +171,7 @@ class LostVoidMoveByDet(ZOperation):
         self.turn_settle_frames: int = 0  # 过冲后的稳定帧数
 
         self._last_attack_btn_check_time: float = 0  # 上一次检查普攻按钮的时间
+        self._last_movement_battle_check: float | None = None
 
         self._reset_turn_calibration_status()
 
@@ -215,10 +216,30 @@ class LostVoidMoveByDet(ZOperation):
         else:
             return self.round_retry('未在大世界画面')
 
+    def _check_battle_during_movement(self) -> OperationRoundResult | None:
+        if self.last_screenshot is None:
+            return None
+
+        now = time.monotonic()
+        if self._last_movement_battle_check is not None and now - self._last_movement_battle_check < 1:
+            return None
+        self._last_movement_battle_check = now
+
+        if not self.ctx.lost_void.check_battle_encounter(self.last_screenshot, self.last_screenshot_time):
+            return None
+
+        self.ctx.controller.stop_moving_forward()
+        log.info('寻路时检测到战斗，停止前进并切换到自动战斗')
+        return self.round_success(self.STATUS_IN_BATTLE)
+
     @node_from(from_name='脱困', status=STATUS_CONTINUE)
     @node_from(from_name='无目标处理', status=STATUS_CONTINUE)
     @operation_node(name='移动前转向', node_max_retry_times=20, is_start_node=True)
     def turn_at_first(self) -> OperationRoundResult:
+        battle_result = self._check_battle_during_movement()
+        if battle_result is not None:
+            return battle_result
+
         in_world = self.ctx.lost_void.in_normal_world(self.last_screenshot)
         if not in_world:
             return self.handle_not_in_world(self.last_screenshot)
@@ -272,6 +293,10 @@ class LostVoidMoveByDet(ZOperation):
     @node_from(from_name='移动前转向', status='开始移动')
     @operation_node(name='移动')
     def move_towards(self) -> OperationRoundResult:
+        battle_result = self._check_battle_during_movement()
+        if battle_result is not None:
+            return battle_result
+
         frame_result: DetectFrameResult = self.ctx.lost_void.detect_to_go(
             self.last_screenshot, screenshot_time=self.last_screenshot_time,
             ignore_list=self.ignore_entry_list)
