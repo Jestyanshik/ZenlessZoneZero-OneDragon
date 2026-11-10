@@ -54,7 +54,8 @@ class ScratchCardApp(ZApplication):
         return open_npc(self, self._npc_screen_marker, move_forward=True)
 
     def _npc_screen_marker(self) -> str | None:
-        for area in ('刮刮卡', '每日可刮取一次', '按钮-同类型确认', '嗷呜标题'):
+        # 嗷呜睡着时没有角色标题，但可以继续选择叫醒他。
+        for area in ('刮刮卡', '每日可刮取一次', '按钮-同类型确认', '嗷呜标题', '嗷呜对话', '叫醒他'):
             if self.round_by_find_area(self.last_screenshot, '报刊亭', area).is_success:
                 return area
         return None

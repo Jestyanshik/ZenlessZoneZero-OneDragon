@@ -169,6 +169,28 @@ def test_scratch_card_checks_title_before_click() -> None:
     assert app.round_by_find_and_click_area.call_args.args[2] == '嗷呜标题'
 
 
+@pytest.mark.parametrize('marker', ['嗷呜对话', '叫醒他'])
+def test_scratch_card_wakes_sleeping_npc_and_continues(marker: str) -> None:
+    app = make_app(ScratchCardApp)
+    visible = {marker}
+    app.round_by_find_area.side_effect = lambda _, screen, area: SUCCESS if area in visible else RETRY
+    app.round_by_ocr_and_click.return_value = OperationRoundResult(OperationRoundResultEnum.SUCCESS, '叫醒他')
+
+    assert app.move_and_interact().status == marker
+    app.ctx.controller.press_npc_interact.assert_not_called()
+    assert app.click_scratch_card().result is OperationRoundResultEnum.RETRY
+    app.round_by_ocr_and_click.assert_called_once_with(
+        app.last_screenshot, '叫醒他', area=app.ctx.screen_loader.get_area.return_value,
+    )
+
+    visible.clear()
+    app.round_by_find_and_click_area.return_value = OperationRoundResult(OperationRoundResultEnum.SUCCESS, '刮刮卡')
+    assert app.click_scratch_card().status == '刮刮卡'
+    app.round_by_find_and_click_area.assert_called_with(app.last_screenshot, '报刊亭', '刮刮卡')
+    visible.add('每日可刮取一次')
+    assert app.click_scratch_card().is_success
+
+
 def test_bakery_bounds_box_actions() -> None:
     app = make_app(HouHouBakeryApp)
     app.round_by_ocr.side_effect = lambda _, word, **kw: SUCCESS if word == '查看今天' else RETRY

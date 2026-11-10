@@ -2,6 +2,8 @@
 
 The scratch card and bakery tasks first verify an expected screen marker. They allow up to three presses with a fresh screenshot between attempts. The scratch-card task moves forward once, before the first press. The bakery's centered-box screen tries the existing mouse click first, then tries the configured interaction key once if the screen persists.
 
+The scratch-card task also recognizes the sleeping NPC dialogue and its **Wake him up!** option as evidence that interaction has opened. It then uses the existing dialogue and ticket flow.
+
 Under **Settings → Game settings → Key settings → Keyboard keys**, **Keyboard input method** selects the input method for foreground game keys. **Standard (pynput)** is the default for new accounts. **Windows scan code** also applies to these tasks' movement and interaction keys. The setting is per account. Background mode retains its existing gamepad input.
 
 The standard backend sends a virtual key when the character maps cleanly to the active layout. Otherwise pynput may use Unicode text input. Scan-code mode sends a key position and logs whether Windows accepted both events. The game must still be observed to confirm receipt. Steam Input legacy keyboard bindings also use scan codes, but the behavior of the user's Steam Link session requires a live test.
